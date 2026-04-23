@@ -1,30 +1,45 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, shrink-to-fit=yes">
-    <meta name="theme-color" content="#0a0a0f">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="description" content="ระบบจัดการการต่ออายุ YouTube Premium">
     <title>YT Premium Manager</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- Fonts & Icons -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- React & Babel -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- LINE LIFF SDK -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
     <style>
         :root {
             --font-thai: 'Noto Sans Thai', 'Rajdhani', sans-serif;
             --font-mono: 'JetBrains Mono', monospace;
-            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            --radius-xl: 24px;
-            --radius-lg: 18px;
-            --radius-md: 14px;
-            --radius-sm: 10px;
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --radius-xl: clamp(16px, 3vw, 28px);
+            --radius-lg: clamp(12px, 2vw, 20px);
+            --radius-md: clamp(10px, 1.5vw, 14px);
+            --radius-sm: clamp(6px, 1vw, 10px);
             --radius-xs: 8px;
+
+            /* Gradients */
             --gradient-primary: linear-gradient(135deg, #FF0000 0%, #CC0000 100%);
             --gradient-dark: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
             --gradient-card: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
@@ -102,24 +117,15 @@
             box-sizing: border-box;
         }
 
-        html {
-            height: 100%;
-            overflow: hidden;
-        }
-
         body {
             font-family: var(--font-thai);
             background: var(--bg-primary);
             color: var(--text-primary);
             transition: background var(--transition), color var(--transition);
-            height: 100vh;
-            height: 100dvh;
-            overflow: hidden;
+            min-height: 100vh;
+            overflow-x: hidden;
             -webkit-tap-highlight-color: transparent;
             -webkit-text-size-adjust: 100%;
-            user-select: none;
-            position: fixed;
-            width: 100%;
             background-image:
                 radial-gradient(ellipse at 20% 50%, rgba(255, 0, 0, 0.03) 0%, transparent 50%),
                 radial-gradient(ellipse at 80% 20%, rgba(255, 0, 0, 0.02) 0%, transparent 50%),
@@ -127,689 +133,159 @@
         }
 
         #root {
-            height: 100%;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
         }
 
+        /* Layout */
         .app-container {
             display: flex;
-            flex-direction: column;
-            height: 100%;
-            overflow: hidden;
+            min-height: 100vh;
+            position: relative;
         }
 
-        .main-content {
-            flex: 1;
-            padding: 16px;
-            overflow-y: auto;
-            overflow-x: hidden;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-            padding-bottom: 90px;
-            background: transparent;
-            height: 100%;
-        }
-
-        .main-content::-webkit-scrollbar {
-            display: none;
-        }
-
-        .top-bar {
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            padding: clamp(16px, 3vw, 28px) clamp(12px, 2vw, 20px);
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            gap: 12px;
-            flex-wrap: wrap;
-            position: sticky;
+            flex-direction: column;
+            position: fixed;
             top: 0;
-            z-index: 10;
-            background: var(--bg-primary);
-            padding-top: 8px;
+            left: 0;
+            bottom: 0;
+            z-index: 100;
+            transition: transform var(--transition);
+            box-shadow: var(--shadow-md);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
         }
 
-        .page-title {
-            font-size: 24px;
+        .sidebar-logo {
+            font-size: clamp(20px, 3vw, 26px);
             font-weight: 700;
             letter-spacing: -0.5px;
-            background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+            margin-bottom: clamp(20px, 4vw, 36px);
+            padding: 0 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--gradient-primary);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            line-height: 1.1;
         }
 
-        .page-title .icon {
-            font-size: 24px;
+        .sidebar-logo i {
+            font-size: clamp(24px, 4vw, 32px);
+            color: var(--accent);
             -webkit-text-fill-color: initial;
+            filter: drop-shadow(0 4px 8px rgba(255, 0, 0, 0.3));
         }
 
-        .glass-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-lg);
-            padding: 16px;
-            box-shadow: var(--glass-shadow);
-            transition: all var(--transition);
-            position: relative;
-            overflow: hidden;
-            margin-bottom: 16px;
+        .sidebar-nav {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            overflow-y: auto;
         }
 
-        .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .stat-card {
+        .nav-item {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 16px;
+            gap: clamp(8px, 1.5vw, 14px);
+            padding: clamp(10px, 1.8vw, 14px) clamp(12px, 2vw, 18px);
+            border-radius: var(--radius-md);
             cursor: pointer;
             transition: all var(--transition);
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-sm);
+            color: var(--text-secondary);
+            font-weight: 500;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            font-family: var(--font-thai);
+            font-size: clamp(13px, 1.6vw, 15px);
+            position: relative;
+            overflow: hidden;
+            white-space: nowrap;
         }
 
-        .stat-card:active {
-            transform: scale(0.97);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 0;
+            background: var(--accent);
+            border-radius: 0 4px 4px 0;
+            transition: height var(--transition);
         }
 
-        .stat-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: var(--radius-md);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
-            background: var(--gradient-card);
-            border: 1px solid var(--border-color);
+        .nav-item:hover {
+            background: var(--hover-bg);
+            color: var(--text-primary);
+            transform: translateX(4px);
+        }
+
+        .nav-item:hover::before {
+            height: 60%;
+        }
+
+        .nav-item.active {
+            background: var(--active-bg);
+            color: var(--accent);
+            font-weight: 600;
+            box-shadow: inset 0 0 20px rgba(255, 0, 0, 0.05);
+            border: 1px solid var(--border-glow);
+        }
+
+        .nav-item.active::before {
+            height: 80%;
+        }
+
+        .nav-item i {
+            width: clamp(18px, 2.5vw, 22px);
+            text-align: center;
+            font-size: clamp(15px, 2vw, 18px);
+            transition: all var(--transition);
             flex-shrink: 0;
         }
 
-        .stat-info h3 {
-            font-size: 24px;
-            font-weight: 700;
-            line-height: 1;
-            margin-bottom: 2px;
-            font-family: var(--font-mono);
-            letter-spacing: -0.5px;
+        .nav-item.active i {
+            filter: drop-shadow(0 0 8px var(--accent-glow));
         }
 
-        .stat-info p {
-            font-size: 11px;
-            color: var(--text-secondary);
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+        .sidebar-footer {
+            margin-top: auto;
+            padding-top: clamp(12px, 2vw, 20px);
+            border-top: 1px solid var(--border-color);
         }
 
-        .stat-trend {
-            font-size: 10px;
-            margin-top: 4px;
+        .user-profile-mini {
             display: flex;
             align-items: center;
-            gap: 4px;
-        }
-
-        .charts-row {
-            display: flex;
-            flex-direction: column;
             gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        .chart-container {
-            position: relative;
-            height: 220px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 8px;
-        }
-
-        .chart-container canvas {
-            max-height: 210px;
-            width: 100% !important;
-        }
-
-        .chart-title {
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            color: var(--text-primary);
-        }
-
-        .table-wrapper {
-            overflow-x: auto;
-            border-radius: var(--radius-md);
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-        }
-
-        .table-wrapper::-webkit-scrollbar {
-            display: none;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            font-size: 12px;
-        }
-
-        th {
-            text-align: left;
-            padding: 10px 10px;
-            font-weight: 600;
-            color: var(--text-secondary);
+            padding: clamp(8px, 1.5vw, 12px);
             background: var(--bg-tertiary);
-            white-space: nowrap;
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            position: sticky;
-            top: 0;
-            z-index: 5;
+            border-radius: var(--radius-md);
+            margin-bottom: 12px;
+            transition: all var(--transition);
         }
 
-        td {
-            padding: 10px 10px;
-            border-bottom: 1px solid var(--border-color);
-            white-space: nowrap;
-            transition: background var(--transition);
-        }
-
-        tbody tr:active td {
+        .user-profile-mini:hover {
             background: var(--hover-bg);
         }
 
-        .btn {
-            padding: 10px 18px;
-            border-radius: 50px;
-            font-weight: 600;
-            cursor: pointer;
-            border: none;
-            transition: all var(--transition);
-            font-family: var(--font-thai);
-            font-size: 13px;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            white-space: nowrap;
-            text-decoration: none;
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-        }
-
-        .btn:active {
-            transform: scale(0.95);
-            opacity: 0.8;
-        }
-
-        .btn-primary {
-            background: var(--gradient-primary);
-            color: white;
-            border: none;
-            box-shadow: 0 4px 15px rgba(255, 0, 0, 0.3);
-        }
-
-        .btn-danger {
-            background: var(--gradient-danger);
-            color: white;
-            border: none;
-        }
-
-        .btn-sm {
-            padding: 6px 10px;
-            font-size: 11px;
-            border-radius: 6px;
-        }
-
-        .input-group {
-            margin-bottom: 14px;
-        }
-
-        .input-group label {
-            display: block;
-            margin-bottom: 6px;
-            font-weight: 600;
-            font-size: 11px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .input-field {
-            width: 100%;
-            padding: 12px 14px;
-            border-radius: var(--radius-sm);
-            border: 1.5px solid var(--border-color);
-            background: var(--input-bg);
-            color: var(--text-primary);
-            font-family: var(--font-thai);
-            font-size: 14px;
-            transition: all var(--transition);
-            outline: none;
-            -webkit-appearance: none;
-        }
-
-        .input-field:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.1);
-        }
-
-        select.input-field {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 12px center;
-            padding-right: 36px;
-        }
-
-        .badge {
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 10px;
-            font-weight: 700;
-            display: inline-flex;
-            align-items: center;
-            gap: 3px;
-            letter-spacing: 0.3px;
-            text-transform: uppercase;
-        }
-
-        .badge-success { background: rgba(46, 213, 115, 0.15); color: var(--success); border: 1px solid rgba(46, 213, 115, 0.3); }
-        .badge-warning { background: rgba(255, 165, 2, 0.15); color: var(--warning); border: 1px solid rgba(255, 165, 2, 0.3); }
-        .badge-danger { background: rgba(255, 71, 87, 0.15); color: var(--danger); border: 1px solid rgba(255, 71, 87, 0.3); }
-        .badge-info { background: rgba(30, 144, 255, 0.15); color: var(--info); border: 1px solid rgba(30, 144, 255, 0.3); }
-
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            z-index: 1000;
-            animation: fadeIn 0.2s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-
-        @keyframes slideUp {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
-        }
-
-        .modal {
-            background: var(--bg-secondary);
-            border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-            padding: 24px 20px;
-            width: 100%;
-            max-height: 85vh;
-            overflow-y: auto;
-            border: 1px solid var(--border-color);
-            box-shadow: var(--shadow-lg);
-            animation: slideUp 0.3s ease;
-            scrollbar-width: none;
-        }
-
-        .modal::-webkit-scrollbar {
-            display: none;
-        }
-
-        .modal h2 {
-            font-size: 18px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 700;
-        }
-
-        .modal-actions {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-            margin-top: 20px;
-            padding-top: 16px;
-            border-top: 1px solid var(--border-color);
-            position: sticky;
-            bottom: 0;
-            background: var(--bg-secondary);
-        }
-
-        .search-box {
-            position: relative;
-            margin-bottom: 16px;
-        }
-
-        .search-box .search-icon {
-            position: absolute;
-            left: 14px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-tertiary);
-            font-size: 14px;
-            z-index: 1;
-            pointer-events: none;
-        }
-
-        .search-box input {
-            padding-left: 42px;
-            border-radius: 50px;
-            font-size: 14px;
-        }
-
-        .login-container {
-            height: 100vh;
-            height: 100dvh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            background: var(--bg-primary);
-            background-image:
-                radial-gradient(ellipse at 50% 0%, rgba(255, 0, 0, 0.05) 0%, transparent 60%),
-                radial-gradient(ellipse at 50% 100%, rgba(255, 0, 0, 0.03) 0%, transparent 60%);
-        }
-
-        .login-card {
-            text-align: center;
-            padding: 40px 24px;
-            max-width: 400px;
-            width: 100%;
-            animation: slideUp 0.5s ease;
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl);
-            box-shadow: var(--glass-shadow);
-        }
-
-        .login-card .logo {
-            width: 70px;
-            height: 70px;
-            margin: 0 auto 20px;
-            background: var(--gradient-primary);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 34px;
-            color: white;
-            box-shadow: 0 8px 30px rgba(255, 0, 0, 0.4);
-            animation: pulse 2s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { box-shadow: 0 8px 30px rgba(255, 0, 0, 0.4); }
-            50% { box-shadow: 0 8px 50px rgba(255, 0, 0, 0.6); }
-        }
-
-        .login-card h1 {
-            font-size: 24px;
-            margin-bottom: 6px;
-            font-weight: 700;
-        }
-
-        .login-card p {
-            color: var(--text-secondary);
-            margin-bottom: 28px;
-            font-size: 13px;
-            line-height: 1.5;
-        }
-
-        .btn-line {
-            background: #06C755;
-            color: white;
-            padding: 14px 24px;
-            border-radius: 50px;
-            font-weight: 700;
-            font-size: 15px;
-            width: 100%;
-            border: none;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            font-family: var(--font-thai);
-            transition: all var(--transition);
-            box-shadow: 0 6px 20px rgba(6, 199, 85, 0.3);
-        }
-
-        .btn-line:active {
-            background: #05a848;
-            transform: scale(0.97);
-        }
-
-        .btn-line:disabled {
-            background: #666;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .bottom-nav {
-            display: flex;
-            position: fixed;
-            bottom: 12px;
-            left: 12px;
-            right: 12px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            padding: 4px 6px;
-            justify-content: space-around;
-            z-index: 99;
-            border-radius: 50px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-        }
-
-        .bottom-nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2px;
-            font-size: 9px;
-            color: var(--text-secondary);
-            cursor: pointer;
-            padding: 6px 8px;
-            border-radius: 40px;
-            transition: all var(--transition);
-            border: none;
-            background: none;
-            font-family: var(--font-thai);
-            font-weight: 500;
-            flex: 1;
-        }
-
-        .bottom-nav-item.active {
-            color: var(--accent);
-            background: var(--active-bg);
-        }
-
-        .bottom-nav-item i {
-            font-size: 18px;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--text-tertiary);
-        }
-
-        .empty-state i {
-            font-size: 40px;
-            margin-bottom: 12px;
-            opacity: 0.3;
-            display: block;
-        }
-
-        .empty-state p {
-            font-size: 13px;
-            margin-top: 4px;
-        }
-
-        .grid-2 {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 0;
-        }
-
-        .loading-spinner {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 150px;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .spinner {
-            width: 36px;
-            height: 36px;
-            border: 3px solid var(--border-color);
-            border-top-color: var(--accent);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .debug-panel {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(0, 0, 0, 0.95);
-            color: #0f0;
-            padding: 10px 14px;
-            font-size: 10px;
-            font-family: var(--font-mono);
-            z-index: 9999;
-            max-height: 180px;
-            overflow-y: auto;
-            border-top: 2px solid #0f0;
-            display: none;
-        }
-
-        .debug-panel.visible {
-            display: block;
-        }
-
-        .debug-entry {
-            padding: 3px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            word-break: break-all;
-        }
-
-        .debug-entry.error { color: #f44; }
-        .debug-entry.success { color: #0f0; }
-        .debug-entry.warning { color: #ff0; }
-        .debug-entry.info { color: #0af; }
-
-        .debug-toggle {
-            position: fixed;
-            bottom: 110px;
-            right: 16px;
-            z-index: 10000;
-            background: rgba(0, 0, 0, 0.8);
-            color: #0f0;
-            border: 1px solid #0f0;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            font-size: 14px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            backdrop-filter: blur(10px);
-            transition: all var(--transition);
-        }
-
-        .debug-toggle:active {
-            transform: scale(0.9);
-        }
-
-        .quick-actions {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 16px;
-        }
-
-        .status-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 4px;
-        }
-
-        .status-dot.active { background: var(--success); box-shadow: 0 0 6px var(--success); }
-        .status-dot.expiring { background: var(--warning); box-shadow: 0 0 6px var(--warning); }
-        .status-dot.expired { background: var(--danger); box-shadow: 0 0 6px var(--danger); }
-
-        .theme-toggle {
-            position: fixed;
-            bottom: 160px;
-            right: 16px;
-            z-index: 10000;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            color: var(--text-primary);
-            box-shadow: var(--shadow-md);
-            transition: all var(--transition);
-        }
-
-        .theme-toggle:active {
-            transform: scale(0.9) rotate(15deg);
-        }
-
         .user-avatar {
-            width: 36px;
-            height: 36px;
+            width: clamp(32px, 5vw, 40px);
+            height: clamp(32px, 5vw, 40px);
             border-radius: 50%;
             object-fit: cover;
             border: 2px solid var(--border-color);
@@ -817,7 +293,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px;
+            font-size: clamp(14px, 2vw, 18px);
             color: var(--text-secondary);
             overflow: hidden;
             flex-shrink: 0;
@@ -829,22 +305,13 @@
             object-fit: cover;
         }
 
-        .user-profile-mini {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px;
-            background: var(--bg-tertiary);
-            border-radius: var(--radius-md);
-        }
-
         .user-info-mini {
             flex: 1;
             min-width: 0;
         }
 
         .user-info-mini .name {
-            font-size: 13px;
+            font-size: clamp(12px, 1.5vw, 14px);
             font-weight: 600;
             color: var(--text-primary);
             white-space: nowrap;
@@ -853,32 +320,1056 @@
         }
 
         .user-info-mini .role {
-            font-size: 10px;
+            font-size: clamp(10px, 1.2vw, 11px);
             color: var(--text-tertiary);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .user-info-mini .role .admin-badge {
+            background: var(--gradient-danger);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: clamp(16px, 3vw, 36px);
+            min-height: 100vh;
+            transition: margin var(--transition);
+            background: transparent;
+            width: calc(100% - 280px);
+            max-width: 100%;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: clamp(20px, 3vw, 36px);
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .page-title {
+            font-size: clamp(20px, 4vw, 32px);
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: flex;
+            align-items: center;
+            gap: clamp(8px, 1.5vw, 12px);
+            white-space: nowrap;
+        }
+
+        .page-title .icon {
+            font-size: clamp(20px, 3.5vw, 28px);
+            -webkit-text-fill-color: initial;
+        }
+
+        /* Cards */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            padding: clamp(16px, 3vw, 28px);
+            box-shadow: var(--glass-shadow);
+            transition: all var(--transition);
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+        }
+
+        .glass-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .neo-card {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            padding: clamp(16px, 2.5vw, 24px);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            transition: all var(--transition);
+        }
+
+        .neo-card:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+            gap: clamp(12px, 2vw, 20px);
+            margin-bottom: clamp(20px, 3vw, 36px);
+        }
+
+        .stat-card {
+            display: flex;
+            align-items: center;
+            gap: clamp(12px, 2vw, 20px);
+            padding: clamp(14px, 2vw, 24px);
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .stat-icon {
+            width: clamp(44px, 7vw, 60px);
+            height: clamp(44px, 7vw, 60px);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(18px, 3vw, 26px);
+            background: var(--gradient-card);
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .stat-icon::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--accent);
+            opacity: 0;
+            transition: opacity var(--transition);
+        }
+
+        .stat-card:hover .stat-icon::after {
+            opacity: 0.1;
+        }
+
+        .stat-icon i {
+            position: relative;
+            z-index: 1;
+        }
+
+        .stat-card:nth-child(1) .stat-icon i {
+            color: var(--info);
+        }
+
+        .stat-card:nth-child(2) .stat-icon i {
+            color: var(--warning);
+        }
+
+        .stat-card:nth-child(3) .stat-icon i {
+            color: var(--success);
+        }
+
+        .stat-card:nth-child(4) .stat-icon i {
+            color: var(--danger);
+        }
+
+        .stat-info h3 {
+            font-size: clamp(20px, 4vw, 32px);
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 4px;
+            font-family: var(--font-mono);
+            letter-spacing: -1px;
+        }
+
+        .stat-info p {
+            font-size: clamp(11px, 1.4vw, 13px);
+            color: var(--text-secondary);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-trend {
+            font-size: clamp(10px, 1.3vw, 12px);
+            margin-top: 4px;
             display: flex;
             align-items: center;
             gap: 4px;
         }
 
-        .admin-badge {
+        .stat-trend.up {
+            color: var(--success);
+        }
+
+        .stat-trend.down {
+            color: var(--danger);
+        }
+
+        /* Charts */
+        .charts-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr));
+            gap: clamp(12px, 2vw, 20px);
+            margin-bottom: clamp(20px, 3vw, 36px);
+        }
+
+        .chart-container {
+            position: relative;
+            height: clamp(220px, 35vw, 320px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+        }
+
+        .chart-container canvas {
+            max-height: 100%;
+            max-width: 100%;
+        }
+
+        .chart-title {
+            font-size: clamp(14px, 1.8vw, 16px);
+            font-weight: 600;
+            margin-bottom: clamp(12px, 2vw, 20px);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-primary);
+        }
+
+        .chart-title i {
+            color: var(--accent);
+        }
+
+        /* Tables */
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: var(--radius-md);
+            -webkit-overflow-scrolling: touch;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: clamp(12px, 1.5vw, 14px);
+        }
+
+        th {
+            text-align: left;
+            padding: clamp(10px, 1.5vw, 14px) clamp(12px, 2vw, 18px);
+            font-weight: 600;
+            color: var(--text-secondary);
+            background: var(--bg-tertiary);
+            white-space: nowrap;
+            font-size: clamp(10px, 1.2vw, 11px);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        th:first-child {
+            border-radius: var(--radius-sm) 0 0 0;
+        }
+
+        th:last-child {
+            border-radius: 0 var(--radius-sm) 0 0;
+        }
+
+        td {
+            padding: clamp(10px, 1.8vw, 16px) clamp(12px, 2vw, 18px);
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+            transition: background var(--transition);
+        }
+
+        tbody tr {
+            transition: all var(--transition);
+        }
+
+        tbody tr:hover td {
+            background: var(--hover-bg);
+        }
+
+        tbody tr:last-child td:first-child {
+            border-radius: 0 0 0 var(--radius-sm);
+        }
+
+        tbody tr:last-child td:last-child {
+            border-radius: 0 0 var(--radius-sm) 0;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: clamp(8px, 1.5vw, 12px) clamp(16px, 2.5vw, 24px);
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all var(--transition);
+            font-family: var(--font-thai);
+            font-size: clamp(12px, 1.5vw, 14px);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent);
+            opacity: 0;
+            transition: opacity var(--transition);
+        }
+
+        .btn:hover::after {
+            opacity: 1;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 0, 0, 0.3);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 6px 20px rgba(255, 0, 0, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--text-tertiary);
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
             background: var(--gradient-danger);
             color: white;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 9px;
+            box-shadow: 0 4px 15px rgba(255, 71, 87, 0.3);
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 6px 20px rgba(255, 71, 87, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-sm {
+            padding: clamp(6px, 1vw, 8px) clamp(10px, 1.5vw, 14px);
+            font-size: clamp(11px, 1.3vw, 12px);
+            border-radius: 8px;
+        }
+
+        /* Inputs */
+        .input-group {
+            margin-bottom: clamp(12px, 2vw, 18px);
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: clamp(11px, 1.4vw, 13px);
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: clamp(10px, 1.8vw, 14px) clamp(14px, 2.5vw, 18px);
+            border-radius: var(--radius-sm);
+            border: 2px solid var(--border-color);
+            background: var(--input-bg);
+            color: var(--text-primary);
+            font-family: var(--font-thai);
+            font-size: clamp(13px, 1.6vw, 14px);
+            transition: all var(--transition);
+            outline: none;
+        }
+
+        .input-field:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(255, 0, 0, 0.1);
+        }
+
+        .input-field::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        select.input-field {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            padding-right: 40px;
+        }
+
+        /* Badges */
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: clamp(9px, 1.1vw, 11px);
             font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .badge-success {
+            background: rgba(46, 213, 115, 0.15);
+            color: var(--success);
+            border: 1px solid rgba(46, 213, 115, 0.3);
+        }
+
+        .badge-warning {
+            background: rgba(255, 165, 2, 0.15);
+            color: var(--warning);
+            border: 1px solid rgba(255, 165, 2, 0.3);
+        }
+
+        .badge-danger {
+            background: rgba(255, 71, 87, 0.15);
+            color: var(--danger);
+            border: 1px solid rgba(255, 71, 87, 0.3);
+        }
+
+        .badge-info {
+            background: rgba(30, 144, 255, 0.15);
+            color: var(--info);
+            border: 1px solid rgba(30, 144, 255, 0.3);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: clamp(12px, 2vw, 20px);
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(40px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-xl);
+            padding: clamp(20px, 4vw, 36px);
+            max-width: min(95vw, 640px);
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-lg);
+            animation: slideUp 0.3s ease;
+        }
+
+        .modal h2 {
+            font-size: clamp(18px, 3vw, 24px);
+            margin-bottom: clamp(16px, 3vw, 28px);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: clamp(16px, 3vw, 28px);
+            padding-top: clamp(12px, 2vw, 20px);
+            border-top: 1px solid var(--border-color);
+            flex-wrap: wrap;
+        }
+
+        /* Search */
+        .search-box {
+            position: relative;
+            margin-bottom: clamp(16px, 2vw, 24px);
+        }
+
+        .search-box .search-icon {
+            position: absolute;
+            left: clamp(12px, 2vw, 18px);
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-tertiary);
+            font-size: clamp(14px, 2vw, 16px);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .search-box input {
+            padding-left: clamp(36px, 5vw, 48px);
+            border-radius: 50px;
+            font-size: clamp(13px, 1.7vw, 15px);
+        }
+
+        /* Login */
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: clamp(16px, 3vw, 20px);
+            background: var(--bg-primary);
+            background-image:
+                radial-gradient(ellipse at 50% 0%, rgba(255, 0, 0, 0.05) 0%, transparent 60%),
+                radial-gradient(ellipse at 50% 100%, rgba(255, 0, 0, 0.03) 0%, transparent 60%);
+        }
+
+        .login-card {
+            text-align: center;
+            padding: clamp(32px, 6vw, 56px) clamp(20px, 5vw, 48px);
+            max-width: min(95vw, 440px);
+            width: 100%;
+            animation: slideUp 0.5s ease;
+        }
+
+        .login-card .logo {
+            width: clamp(70px, 12vw, 90px);
+            height: clamp(70px, 12vw, 90px);
+            margin: 0 auto clamp(16px, 3vw, 24px);
+            background: var(--gradient-primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(32px, 6vw, 44px);
+            color: white;
+            box-shadow: 0 10px 40px rgba(255, 0, 0, 0.4);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                box-shadow: 0 10px 40px rgba(255, 0, 0, 0.4);
+            }
+
+            50% {
+                box-shadow: 0 10px 60px rgba(255, 0, 0, 0.6);
+            }
+        }
+
+        .login-card h1 {
+            font-size: clamp(22px, 4vw, 28px);
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .login-card p {
+            color: var(--text-secondary);
+            margin-bottom: clamp(24px, 4vw, 36px);
+            font-size: clamp(13px, 1.8vw, 15px);
+            line-height: 1.6;
+        }
+
+        .btn-line {
+            background: #06C755;
+            color: white;
+            padding: clamp(12px, 2vw, 16px) clamp(24px, 4vw, 36px);
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: clamp(14px, 2vw, 16px);
+            width: 100%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-family: var(--font-thai);
+            transition: all var(--transition);
+            box-shadow: 0 8px 30px rgba(6, 199, 85, 0.3);
+            letter-spacing: 0.5px;
+        }
+
+        .btn-line:hover {
+            background: #05a848;
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px rgba(6, 199, 85, 0.4);
+        }
+
+        .btn-line:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Mobile */
+        .mobile-menu-btn {
+            display: none;
+        }
+
+        .bottom-nav {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                border-radius: 0;
+                width: clamp(260px, 85vw, 300px);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: clamp(12px, 4vw, 20px);
+                padding-bottom: 90px;
+                width: 100%;
+            }
+
+            .mobile-menu-btn {
+                display: flex;
+                width: clamp(38px, 6vw, 44px);
+                height: clamp(38px, 6vw, 44px);
+                align-items: center;
+                justify-content: center;
+                font-size: clamp(18px, 3vw, 22px);
+                cursor: pointer;
+                background: var(--bg-tertiary);
+                border-radius: 50%;
+                border: 1px solid var(--border-color);
+                color: var(--text-primary);
+                box-shadow: var(--shadow-sm);
+            }
+
+            .bottom-nav {
+                display: flex;
+                position: fixed;
+                bottom: clamp(8px, 2vw, 16px);
+                left: clamp(8px, 2vw, 16px);
+                right: clamp(8px, 2vw, 16px);
+                background: var(--glass-bg);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                border: 1px solid var(--border-color);
+                padding: 6px 8px;
+                justify-content: space-around;
+                z-index: 99;
+                border-radius: 50px;
+                box-shadow: var(--shadow-lg);
+            }
+
+            .bottom-nav-item {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 2px;
+                font-size: clamp(9px, 1.5vw, 10px);
+                color: var(--text-secondary);
+                cursor: pointer;
+                padding: 6px 8px;
+                border-radius: 40px;
+                transition: all var(--transition);
+                border: none;
+                background: none;
+                font-family: var(--font-thai);
+                font-weight: 500;
+                flex: 1;
+                min-width: 0;
+            }
+
+            .bottom-nav-item.active {
+                color: var(--accent);
+                background: var(--active-bg);
+            }
+
+            .bottom-nav-item i {
+                font-size: clamp(16px, 3vw, 20px);
+            }
+
+            .charts-row {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+                gap: 8px;
+            }
+
+            .page-title {
+                font-size: clamp(18px, 5vw, 24px);
+            }
+
+            .stat-card {
+                padding: clamp(10px, 2vw, 18px);
+            }
+
+            .stat-info h3 {
+                font-size: clamp(18px, 4vw, 24px);
+            }
+
+            .stat-icon {
+                width: clamp(36px, 8vw, 48px);
+                height: clamp(36px, 8vw, 48px);
+                font-size: clamp(14px, 3vw, 20px);
+            }
+
+            .modal {
+                padding: clamp(16px, 4vw, 24px);
+                border-radius: var(--radius-lg);
+            }
+
+            .btn {
+                padding: clamp(8px, 2vw, 10px) clamp(12px, 3vw, 18px);
+                font-size: clamp(11px, 2vw, 13px);
+            }
+
+            .input-field {
+                padding: clamp(8px, 2vw, 14px) clamp(12px, 3vw, 18px);
+                font-size: clamp(13px, 2.5vw, 16px);
+                /* ป้องกัน zoom บน iOS */
+            }
+
+            .badge {
+                padding: 3px 8px;
+                font-size: clamp(8px, 1.5vw, 10px);
+            }
+
+            table {
+                font-size: clamp(10px, 2vw, 12px);
+            }
+
+            th,
+            td {
+                padding: clamp(8px, 2vw, 12px) clamp(10px, 2.5vw, 14px);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 6px;
+            }
+
+            .btn {
+                padding: 8px 14px;
+                font-size: 12px;
+            }
+
+            .modal {
+                padding: 16px;
+            }
+
+            .login-card {
+                padding: 28px 16px;
+            }
+
+            .main-content {
+                padding: 12px;
+                padding-bottom: 85px;
+            }
+
+            .top-bar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .top-bar .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .search-box input {
+                font-size: 16px;
+                /* ป้องกัน zoom */
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: clamp(30px, 8vw, 60px) 20px;
+            color: var(--text-tertiary);
+        }
+
+        .empty-state i {
+            font-size: clamp(36px, 8vw, 56px);
+            margin-bottom: 16px;
+            opacity: 0.3;
+            display: block;
+        }
+
+        .empty-state p {
+            font-size: clamp(13px, 2vw, 15px);
+            margin-top: 8px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: clamp(10px, 2vw, 16px);
+        }
+
+        @media (max-width: 480px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Loading */
+        .loading-spinner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .spinner {
+            width: clamp(36px, 5vw, 44px);
+            height: clamp(36px, 5vw, 44px);
+            border: 3px solid var(--border-color);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Debug Panel */
+        .debug-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.95);
+            color: #0f0;
+            padding: 12px 18px;
+            font-size: 11px;
+            font-family: var(--font-mono);
+            z-index: 9999;
+            max-height: min(30vh, 220px);
+            overflow-y: auto;
+            border-top: 2px solid #0f0;
+            display: none;
+        }
+
+        .debug-panel.visible {
+            display: block;
+        }
+
+        .debug-entry {
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            word-break: break-all;
+            font-size: clamp(10px, 1.5vw, 11px);
+        }
+
+        .debug-entry.error {
+            color: #f44;
+        }
+
+        .debug-entry.success {
+            color: #0f0;
+        }
+
+        .debug-entry.warning {
+            color: #ff0;
+        }
+
+        .debug-entry.info {
+            color: #0af;
+        }
+
+        .debug-toggle {
+            position: fixed;
+            bottom: clamp(12px, 3vw, 20px);
+            right: clamp(12px, 3vw, 20px);
+            z-index: 10000;
+            background: rgba(0, 0, 0, 0.8);
+            color: #0f0;
+            border: 1px solid #0f0;
+            border-radius: 50%;
+            width: clamp(36px, 6vw, 44px);
+            height: clamp(36px, 6vw, 44px);
+            font-size: clamp(14px, 2vw, 16px);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+            transition: all var(--transition);
+        }
+
+        .debug-toggle:hover {
+            background: rgba(0, 255, 0, 0.1);
+            transform: scale(1.1);
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: flex;
+            gap: clamp(6px, 1.5vw, 10px);
+            flex-wrap: wrap;
+            margin-bottom: clamp(16px, 2.5vw, 24px);
+        }
+
+        /* Status Dot */
+        .status-dot {
+            width: clamp(6px, 1vw, 8px);
+            height: clamp(6px, 1vw, 8px);
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 4px;
+        }
+
+        .status-dot.active {
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+        }
+
+        .status-dot.expiring {
+            background: var(--warning);
+            box-shadow: 0 0 8px var(--warning);
+        }
+
+        .status-dot.expired {
+            background: var(--danger);
+            box-shadow: 0 0 8px var(--danger);
+        }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            position: fixed;
+            bottom: clamp(60px, 12vw, 80px);
+            right: clamp(12px, 3vw, 20px);
+            z-index: 10000;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            width: clamp(36px, 6vw, 44px);
+            height: clamp(36px, 6vw, 44px);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(14px, 2.5vw, 18px);
+            color: var(--text-primary);
+            box-shadow: var(--shadow-md);
+            transition: all var(--transition);
+            backdrop-filter: blur(10px);
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1) rotate(15deg);
         }
     </style>
 </head>
+
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect, useCallback, useRef, createContext, useContext } = React;
 
+        // ==================== CONFIG ====================
+        // 🔧 เปลี่ยน URL นี้เป็นของ Google Apps Script ของคุณ
         const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx5iVZAOy-bO_c5vpLBXlcH0UitCuoRMu662reiE1gMLSOklj_7uQoAnH9bpYRP5QzQ/exec';
+
+        // 🔧 เปลี่ยนเป็น LIFF ID ของคุณจาก LINE Developers Console
         const LIFF_ID = '2009880685-UCuYnwIF';
 
+        // ==================== DEBUG LOGGER ====================
         const debugLogs = [];
         const addDebugLog = (message, type = 'info') => {
             const entry = {
@@ -889,6 +1380,8 @@
             debugLogs.push(entry);
             if (debugLogs.length > 100) debugLogs.shift();
             console.log(`[${type.toUpperCase()}]`, message);
+
+            // Update DOM if debug panel exists
             const panel = document.getElementById('debug-panel');
             if (panel && panel.classList.contains('visible')) {
                 updateDebugPanel();
@@ -904,18 +1397,25 @@
             panel.scrollTop = panel.scrollHeight;
         };
 
+        // ==================== CONTEXT ====================
         const AppContext = createContext();
         const useApp = () => useContext(AppContext);
 
+        // ==================== LINE LOGIN SERVICE ====================
         class LineLoginService {
             static async initLiff() {
                 try {
                     addDebugLog(`Initializing LIFF with ID: ${LIFF_ID}`, 'info');
+
                     await liff.init({
                         liffId: LIFF_ID,
                         withLoginOnExternalBrowser: true
                     });
+
                     addDebugLog('LIFF initialized successfully', 'success');
+                    addDebugLog(`LIFF Version: ${liff.getVersion()}`, 'info');
+                    addDebugLog(`Is logged in: ${liff.isLoggedIn()}`, 'info');
+
                     return true;
                 } catch (error) {
                     addDebugLog(`LIFF initialization failed: ${error.message}`, 'error');
@@ -926,18 +1426,28 @@
 
             static async login() {
                 addDebugLog('Starting LINE login process...', 'info');
+                addDebugLog(`Is logged in: ${liff.isLoggedIn()}`, 'info');
+
                 if (!liff.isLoggedIn()) {
                     addDebugLog('Not logged in, redirecting to LINE login...', 'warning');
                     liff.login();
                     return null;
                 }
+
+                addDebugLog('Already logged in, getting profile...', 'info');
                 return await this.getProfile();
             }
 
             static async getProfile() {
                 try {
+                    addDebugLog('Getting LINE profile...', 'info');
+
                     const profile = await liff.getProfile();
+                    addDebugLog(`Profile received: userId=${profile.userId}, name=${profile.displayName}`, 'success');
+
                     const idToken = liff.getIDToken();
+                    addDebugLog(`ID Token: ${idToken ? idToken.substring(0, 50) + '...' : 'null'}`, 'info');
+
                     return {
                         userId: profile.userId,
                         displayName: profile.displayName,
@@ -947,23 +1457,31 @@
                     };
                 } catch (error) {
                     addDebugLog(`Failed to get profile: ${error.message}`, 'error');
+                    console.error('Profile Error:', error);
                     return null;
                 }
             }
 
             static isLoggedIn() {
-                return liff.isLoggedIn();
+                const loggedIn = liff.isLoggedIn();
+                addDebugLog(`Check login status: ${loggedIn}`, 'info');
+                return loggedIn;
             }
 
             static logout() {
-                if (liff.isLoggedIn()) liff.logout();
+                addDebugLog('Logging out from LINE...', 'warning');
+                if (liff.isLoggedIn()) {
+                    liff.logout();
+                }
             }
         }
 
+        // ==================== APP PROVIDER ====================
         const AppProvider = ({ children }) => {
             const [user, setUser] = useState(null);
             const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
             const [currentPage, setCurrentPage] = useState('dashboard');
+            const [sidebarOpen, setSidebarOpen] = useState(false);
             const [customers, setCustomers] = useState([]);
             const [users, setUsers] = useState([]);
             const [loading, setLoading] = useState(true);
@@ -972,31 +1490,50 @@
             const [debugVisible, setDebugVisible] = useState(false);
             const [initError, setInitError] = useState(null);
 
+            // Initialize LIFF
             useEffect(() => {
                 const initApp = async () => {
                     addDebugLog('=== App Initialization Started ===', 'info');
+                    addDebugLog(`API URL: ${APPS_SCRIPT_URL}`, 'info');
+                    addDebugLog(`LIFF ID: ${LIFF_ID}`, 'info');
+                    addDebugLog(`User Agent: ${navigator.userAgent}`, 'info');
+
                     setLoading(true);
+
                     try {
                         const initialized = await LineLoginService.initLiff();
                         setLiffReady(initialized);
+
                         if (initialized) {
                             if (LineLoginService.isLoggedIn()) {
+                                addDebugLog('User is logged in, loading profile...', 'info');
                                 const profile = await LineLoginService.getProfile();
+
                                 if (profile) {
+                                    addDebugLog('Profile loaded, registering/logging in...', 'info');
                                     await registerOrLoginUser(profile);
                                 } else {
-                                    setInitError('Cannot load LINE profile');
+                                    const error = 'Cannot load LINE profile';
+                                    addDebugLog(error, 'error');
+                                    setInitError(error);
                                 }
+                            } else {
+                                addDebugLog('User is not logged in yet', 'info');
                             }
                         } else {
-                            setInitError('LIFF initialization failed');
+                            const error = 'LIFF initialization failed';
+                            addDebugLog(error, 'error');
+                            setInitError(error);
                         }
                     } catch (error) {
+                        addDebugLog(`Init error: ${error.message}`, 'error');
                         setInitError(error.message);
                     }
+
                     setLoading(false);
                     addDebugLog('=== App Initialization Completed ===', 'info');
                 };
+
                 initApp();
             }, []);
 
@@ -1008,8 +1545,9 @@
             const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
 
             const showToast = (message, type = 'info') => {
+                addDebugLog(`Toast: [${type}] ${message}`, type === 'danger' ? 'error' : type);
                 setToast({ message, type });
-                setTimeout(() => setToast(null), 2000);
+                setTimeout(() => setToast(null), 3000);
             };
 
             const callAPI = useCallback(async (action, params = {}) => {
@@ -1021,14 +1559,32 @@
                         userRank: user?.rank || 0,
                         storeName: user?.storeName || 'My Shop'
                     };
+
+                    addDebugLog(`API Call: ${action}`, 'info');
+                    addDebugLog(`Request: ${JSON.stringify(requestData).substring(0, 200)}`, 'info');
+
+                    // ใช้ GET + payload เพื่อหลีกเลี่ยง CORS preflight
                     const payload = encodeURIComponent(JSON.stringify(requestData));
                     const url = `${APPS_SCRIPT_URL}?payload=${payload}`;
+
                     const response = await fetch(url, { method: 'GET' });
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                    addDebugLog(`Response status: ${response.status} ${response.statusText}`, 'info');
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
                     const data = await response.json();
-                    if (data.error) throw new Error(data.message || data.error);
+                    addDebugLog(`Response: ${JSON.stringify(data).substring(0, 300)}`, data.error ? 'error' : 'success');
+
+                    if (data.error) {
+                        throw new Error(data.message || data.error);
+                    }
+
                     return data;
                 } catch (error) {
+                    addDebugLog(`API Error (${action}): ${error.message}`, 'error');
                     showToast(error.message, 'danger');
                     throw error;
                 }
@@ -1036,6 +1592,8 @@
 
             const registerOrLoginUser = async (profile) => {
                 try {
+                    addDebugLog(`Registering/Logging in: ${profile.userId}`, 'info');
+
                     const requestData = {
                         action: 'loginOrRegister',
                         userId: profile.userId,
@@ -1043,11 +1601,24 @@
                         pictureUrl: profile.pictureUrl,
                         idToken: profile.idToken,
                     };
+
+                    // ใช้ GET + payload เพื่อหลีกเลี่ยง CORS preflight
                     const payload = encodeURIComponent(JSON.stringify(requestData));
                     const url = `${APPS_SCRIPT_URL}?payload=${payload}`;
+
+                    addDebugLog(`Login URL: ${url.substring(0, 100)}...`, 'info');
+
                     const response = await fetch(url, { method: 'GET' });
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                    addDebugLog(`Login response status: ${response.status}`, 'info');
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
                     const data = await response.json();
+                    addDebugLog(`Login data: ${JSON.stringify(data).substring(0, 300)}`, data.success ? 'success' : 'error');
+
                     if (data.success && data.user) {
                         const userData = {
                             ...data.user,
@@ -1055,26 +1626,39 @@
                             pictureUrl: profile.pictureUrl,
                             rank: parseInt(data.user.rank) || 0
                         };
+
+                        addDebugLog(`User logged in: ${userData.lineName} (${userData.rank === 1 ? 'Admin' : 'Member'})`, 'success');
+
                         setUser(userData);
                         showToast(`ยินดีต้อนรับ ${data.user.lineName || profile.displayName}`, 'success');
                     } else {
-                        throw new Error(data.message || 'Login failed');
+                        throw new Error(data.message || 'Login failed - no user data');
                     }
                 } catch (error) {
-                    showToast('เกิดข้อผิดพลาดในการเข้าสู่ระบบ', 'danger');
+                    addDebugLog(`Login/Register failed: ${error.message}`, 'error');
+                    showToast('เกิดข้อผิดพลาดในการเข้าสู่ระบบ: ' + error.message, 'danger');
                 }
             };
 
             const loginWithLine = async () => {
+                addDebugLog('=== Login button clicked ===', 'info');
+
                 if (!liffReady) {
-                    showToast('ระบบยังไม่พร้อมใช้งาน', 'danger');
+                    const error = 'LIFF is not ready';
+                    addDebugLog(error, 'error');
+                    showToast('ระบบ LIFF ยังไม่พร้อมใช้งาน', 'danger');
                     return;
                 }
+
                 const profile = await LineLoginService.login();
-                if (profile) await registerOrLoginUser(profile);
+
+                if (profile) {
+                    await registerOrLoginUser(profile);
+                }
             };
 
             const logout = () => {
+                addDebugLog('=== Logging out ===', 'warning');
                 LineLoginService.logout();
                 setUser(null);
                 setCustomers([]);
@@ -1085,22 +1669,33 @@
 
             const fetchCustomers = useCallback(async () => {
                 if (!user) return;
+                addDebugLog('Fetching customers...', 'info');
+                setLoading(true);
                 try {
                     const data = await callAPI('getCustomers');
                     setCustomers(data.customers || []);
-                } catch (e) {}
+                    addDebugLog(`Customers loaded: ${data.customers?.length || 0}`, 'success');
+                } catch (e) {
+                    addDebugLog(`Failed to fetch customers: ${e.message}`, 'error');
+                }
+                setLoading(false);
             }, [user, callAPI]);
 
             const fetchUsers = useCallback(async () => {
                 if (!user || user.rank !== 1) return;
+                addDebugLog('Fetching users (admin)...', 'info');
                 try {
                     const data = await callAPI('getUsers');
                     setUsers(data.users || []);
-                } catch (e) {}
+                    addDebugLog(`Users loaded: ${data.users?.length || 0}`, 'success');
+                } catch (e) {
+                    addDebugLog(`Failed to fetch users: ${e.message}`, 'error');
+                }
             }, [user, callAPI]);
 
             useEffect(() => {
                 if (user) {
+                    addDebugLog('User state changed, fetching data...', 'info');
                     fetchCustomers();
                     if (user.rank === 1) fetchUsers();
                 }
@@ -1110,6 +1705,7 @@
                 user, setUser,
                 theme, toggleTheme,
                 currentPage, setCurrentPage,
+                sidebarOpen, setSidebarOpen,
                 customers, setCustomers,
                 users, setUsers,
                 loading, setLoading,
@@ -1128,22 +1724,25 @@
             );
         };
 
+        // ==================== TOAST COMPONENT ====================
         const Toast = () => {
             const { toast } = useApp();
             if (!toast) return null;
             return (
                 <div style={{
-                    position: 'fixed', top: '16px', left: '16px', right: '16px', zIndex: 2000,
-                    padding: '14px 18px', borderRadius: '16px', fontWeight: 600,
+                    position: 'fixed', top: 'clamp(12px, 3vw, 24px)', right: 'clamp(12px, 3vw, 24px)', zIndex: 2000,
+                    padding: 'clamp(12px, 2vw, 16px) clamp(16px, 3vw, 24px)', borderRadius: '16px', fontWeight: 600,
                     background: toast.type === 'danger' ? 'var(--gradient-danger)' :
                         toast.type === 'success' ? 'var(--gradient-success)' : 'var(--gradient-info)',
                     color: 'white', boxShadow: '0 12px 40px rgba(0,0,0,0.4)',
                     animation: 'slideUp 0.3s ease',
+                    maxWidth: '90vw',
+                    wordBreak: 'break-word',
                     backdropFilter: 'blur(20px)',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '10px',
-                    fontSize: '13px',
+                    fontSize: 'clamp(12px, 1.8vw, 14px)',
                 }}>
                     <i className={`fa-solid fa-${toast.type === 'danger' ? 'circle-exclamation' : toast.type === 'success' ? 'circle-check' : 'circle-info'}`}></i>
                     {toast.message}
@@ -1151,11 +1750,14 @@
             );
         };
 
+        // ==================== DEBUG PANEL ====================
         const DebugPanel = () => {
             const { debugVisible, setDebugVisible } = useApp();
+
             useEffect(() => {
                 updateDebugPanel();
             }, [debugVisible]);
+
             return (
                 <>
                     <button
@@ -1173,17 +1775,88 @@
             );
         };
 
+        // ==================== LOADING SCREEN ====================
         const LoadingScreen = () => {
             const { initError } = useApp();
             return (
                 <div className="login-container">
-                    <div className="login-card">
+                    <div className="login-card glass-card">
                         <div className="loading-spinner">
                             <div className="spinner"></div>
-                            <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(14px, 2vw, 16px)' }}>
                                 กำลังโหลดระบบ...
                             </p>
                         </div>
+                        {initError ? (
+                            <div style={{
+                                marginTop: 'clamp(16px, 3vw, 24px)',
+                                padding: 'clamp(12px, 2vw, 20px)',
+                                background: 'rgba(255,71,87,0.1)',
+                                borderRadius: '16px',
+                                border: '1px solid var(--danger)'
+                            }}>
+                                <p style={{ color: 'var(--danger)', fontSize: 'clamp(12px, 1.8vw, 14px)', fontWeight: 600 }}>
+                                    <i className="fa-solid fa-triangle-exclamation"></i> เกิดข้อผิดพลาด
+                                </p>
+                                <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(11px, 1.5vw, 12px)', marginTop: '8px', wordBreak: 'break-all' }}>
+                                    {initError}
+                                </p>
+                                <button
+                                    className="btn btn-secondary btn-sm"
+                                    style={{ marginTop: '16px' }}
+                                    onClick={() => window.location.reload()}
+                                >
+                                    <i className="fa-solid fa-rotate"></i> ลองใหม่
+                                </button>
+                            </div>
+                        ) : (
+                            <p style={{ marginTop: '16px', fontSize: 'clamp(12px, 1.6vw, 13px)', color: 'var(--text-tertiary)' }}>
+                                <i className="fa-solid fa-spinner fa-pulse"></i> กำลังเชื่อมต่อกับ LINE และระบบฐานข้อมูล...
+                            </p>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // ==================== LOGIN PAGE ====================
+        const LoginPage = () => {
+            const { loginWithLine, liffReady, initError } = useApp();
+
+            const handleLogin = async () => {
+                addDebugLog('Login button clicked in LoginPage', 'info');
+                await loginWithLine();
+            };
+
+            return (
+                <div className="login-container">
+                    <div className="login-card glass-card">
+                        <div className="logo">
+                            <i className="fa-brands fa-youtube"></i>
+                        </div>
+                        <h1>YT Premium Manager</h1>
+                        <p>จัดการการต่ออายุ YouTube Premium อย่างมืออาชีพ ติดตามสถานะ และรับการแจ้งเตือนก่อนหมดอายุ</p>
+
+                        {!liffReady && !initError ? (
+                            <div style={{ marginBottom: 'clamp(16px, 3vw, 24px)' }}>
+                                <div className="loading-spinner" style={{ minHeight: '50px' }}>
+                                    <div className="spinner" style={{ width: 'clamp(28px, 5vw, 36px)', height: 'clamp(28px, 5vw, 36px)', borderWidth: '3px' }}></div>
+                                </div>
+                                <p style={{ fontSize: 'clamp(12px, 1.6vw, 13px)', color: 'var(--text-tertiary)' }}>
+                                    กำลังเชื่อมต่อกับ LINE...
+                                </p>
+                            </div>
+                        ) : (
+                            <button
+                                className="btn btn-line"
+                                onClick={handleLogin}
+                                disabled={!liffReady}
+                            >
+                                <i className="fa-brands fa-line"></i>
+                                {liffReady ? 'เข้าสู่ระบบด้วย LINE' : 'กำลังเชื่อมต่อ...'}
+                            </button>
+                        )}
+
                         {initError && (
                             <div style={{
                                 marginTop: '20px',
@@ -1192,51 +1865,13 @@
                                 borderRadius: '12px',
                                 border: '1px solid var(--danger)'
                             }}>
-                                <p style={{ color: 'var(--danger)', fontSize: '12px', wordBreak: 'break-all' }}>
+                                <p style={{ color: 'var(--danger)', fontSize: 'clamp(11px, 1.5vw, 12px)', wordBreak: 'break-all' }}>
                                     <i className="fa-solid fa-triangle-exclamation"></i> {initError}
                                 </p>
                             </div>
                         )}
-                    </div>
-                </div>
-            );
-        };
 
-        const LoginPage = () => {
-            const { loginWithLine, liffReady, initError } = useApp();
-            return (
-                <div className="login-container">
-                    <div className="login-card">
-                        <div className="logo">
-                            <i className="fa-brands fa-youtube"></i>
-                        </div>
-                        <h1>YT Premium Manager</h1>
-                        <p>จัดการการต่ออายุ YouTube Premium อย่างมืออาชีพ ติดตามสถานะ และรับการแจ้งเตือนก่อนหมดอายุ</p>
-                        {!liffReady && !initError ? (
-                            <div style={{ marginBottom: '20px' }}>
-                                <div className="loading-spinner" style={{ minHeight: '40px' }}>
-                                    <div className="spinner" style={{ width: '28px', height: '28px', borderWidth: '2px' }}></div>
-                                </div>
-                                <p style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>กำลังเชื่อมต่อกับ LINE...</p>
-                            </div>
-                        ) : (
-                            <button
-                                className="btn btn-line"
-                                onClick={loginWithLine}
-                                disabled={!liffReady}
-                            >
-                                <i className="fa-brands fa-line"></i>
-                                {liffReady ? 'เข้าสู่ระบบด้วย LINE' : 'กำลังเชื่อมต่อ...'}
-                            </button>
-                        )}
-                        {initError && (
-                            <div style={{ marginTop: '16px', padding: '12px', background: 'rgba(255,71,87,0.1)', borderRadius: '10px', border: '1px solid var(--danger)' }}>
-                                <p style={{ color: 'var(--danger)', fontSize: '11px', wordBreak: 'break-all' }}>
-                                    <i className="fa-solid fa-triangle-exclamation"></i> {initError}
-                                </p>
-                            </div>
-                        )}
-                        <div style={{ marginTop: '20px', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'center', color: 'var(--text-tertiary)', fontSize: '11px' }}>
+                        <div style={{ marginTop: 'clamp(20px, 4vw, 28px)', display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', color: 'var(--text-tertiary)', fontSize: 'clamp(11px, 1.5vw, 12px)' }}>
                             <i className="fa-solid fa-shield-halved"></i>
                             <span>รองรับการเข้าสู่ระบบด้วย LINE เท่านั้น</span>
                         </div>
@@ -1245,6 +1880,65 @@
             );
         };
 
+        // ==================== SIDEBAR ====================
+        const Sidebar = () => {
+            const { user, currentPage, setCurrentPage, sidebarOpen, setSidebarOpen, logout } = useApp();
+            const isAdmin = user?.rank === 1;
+
+            const navItems = [
+                { id: 'dashboard', label: 'แดชบอร์ด', icon: 'fa-chart-pie' },
+                { id: 'customers', label: 'จัดการลูกค้า', icon: 'fa-users' },
+                { id: 'check', label: 'เช็คข้อมูล', icon: 'fa-magnifying-glass' },
+                { id: 'profile', label: 'โปรไฟล์', icon: 'fa-user-circle' },
+                ...(isAdmin ? [{ id: 'users', label: 'จัดการผู้ใช้', icon: 'fa-user-shield' }] : []),
+            ];
+
+            return (
+                <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+                    <div className="sidebar-logo">
+                        <i className="fa-brands fa-youtube"></i>
+                        <span>YT Premium</span>
+                    </div>
+                    <nav className="sidebar-nav">
+                        {navItems.map(item => (
+                            <button
+                                key={item.id}
+                                className={`nav-item ${currentPage === item.id ? 'active' : ''}`}
+                                onClick={() => { setCurrentPage(item.id); setSidebarOpen(false); }}
+                            >
+                                <i className={`fa-solid ${item.icon}`}></i>
+                                <span>{item.label}</span>
+                                {item.id === 'users' && <span className="badge badge-danger" style={{ marginLeft: 'auto', fontSize: '10px', padding: '2px 8px' }}>ADMIN</span>}
+                            </button>
+                        ))}
+                    </nav>
+                    <div className="sidebar-footer">
+                        <div className="user-profile-mini">
+                            <div className="user-avatar">
+                                {user?.pictureUrl ? (
+                                    <img src={user.pictureUrl} alt="" onError={(e) => { e.target.style.display = 'none'; }} />
+                                ) : (
+                                    <i className="fa-solid fa-user"></i>
+                                )}
+                            </div>
+                            <div className="user-info-mini">
+                                <div className="name">{user?.lineName || 'User'}</div>
+                                <div className="role">
+                                    {user?.storeName || ''}
+                                    {user?.rank === 1 && <span className="admin-badge">👑 ADMIN</span>}
+                                </div>
+                            </div>
+                        </div>
+                        <button className="nav-item" onClick={logout} style={{ color: 'var(--danger)' }}>
+                            <i className="fa-solid fa-right-from-bracket"></i>
+                            <span>ออกจากระบบ</span>
+                        </button>
+                    </div>
+                </aside>
+            );
+        };
+
+        // ==================== BOTTOM NAV ====================
         const BottomNav = () => {
             const { currentPage, setCurrentPage, user } = useApp();
             const isAdmin = user?.rank === 1;
@@ -1271,9 +1965,11 @@
             );
         };
 
+        // ==================== DASHBOARD PAGE ====================
         const Dashboard = () => {
             const { customers, user } = useApp();
             const isAdmin = user?.rank === 1;
+
             const filteredCustomers = isAdmin ? customers : customers.filter(c => c.storeName === user?.storeName);
 
             const totalCustomers = filteredCustomers.length;
@@ -1281,7 +1977,15 @@
                 acc[c.package || 'Unknown'] = (acc[c.package || 'Unknown'] || 0) + 1;
                 return acc;
             }, {});
-            const availableHeads = filteredCustomers.filter(c => c.status === 'ว่าง' || c.status === 'available' || !c.houseHead || c.houseHead === '');
+
+            const availableHeads = filteredCustomers.filter(c =>
+                c.status === 'ว่าง' || c.status === 'available' || !c.houseHead || c.houseHead === ''
+            );
+
+            const latestCustomers = [...filteredCustomers]
+                .sort((a, b) => new Date(b.createdAt || b.purchaseDate || 0) - new Date(a.createdAt || a.purchaseDate || 0))
+                .slice(0, 5);
+
             const today = new Date();
             const expiringSoon = filteredCustomers.filter(c => {
                 if (!c.expiryDate) return false;
@@ -1289,7 +1993,9 @@
                     const expiry = new Date(c.expiryDate);
                     const diffDays = Math.ceil((expiry - today) / (1000 * 60 * 60 * 24));
                     return diffDays <= 2 && diffDays >= 0;
-                } catch (e) { return false; }
+                } catch (e) {
+                    return false;
+                }
             });
 
             const barChartRef = useRef(null);
@@ -1299,14 +2005,17 @@
 
             useEffect(() => {
                 const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
                 if (barChartRef.current) {
                     if (barInstance.current) barInstance.current.destroy();
                     const ctx = barChartRef.current.getContext('2d');
                     const labels = Object.keys(packageCounts);
                     const data = Object.values(packageCounts);
-                    const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+
+                    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
                     gradient.addColorStop(0, 'rgba(255, 0, 0, 0.8)');
                     gradient.addColorStop(1, 'rgba(255, 0, 0, 0.1)');
+
                     barInstance.current = new Chart(ctx, {
                         type: 'bar',
                         data: {
@@ -1315,8 +2024,10 @@
                                 label: 'จำนวนลูกค้า',
                                 data: data.length ? data : [0],
                                 backgroundColor: gradient,
-                                borderRadius: 8,
+                                borderRadius: 12,
                                 borderSkipped: false,
+                                borderColor: 'rgba(255, 0, 0, 0.3)',
+                                borderWidth: 1,
                             }]
                         },
                         options: {
@@ -1324,25 +2035,43 @@
                             maintainAspectRatio: false,
                             plugins: { legend: { display: false } },
                             scales: {
-                                y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } }, grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' } },
-                                x: { ticks: { font: { size: 10 } }, grid: { display: false } }
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: { stepSize: 1, color: isDark ? '#888' : '#666' },
+                                    grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }
+                                },
+                                x: {
+                                    ticks: { color: isDark ? '#888' : '#666' },
+                                    grid: { display: false }
+                                }
                             }
                         }
                     });
                 }
+
                 if (pieChartRef.current) {
                     if (pieInstance.current) pieInstance.current.destroy();
                     const ctx = pieChartRef.current.getContext('2d');
                     const labels = Object.keys(packageCounts);
                     const data = Object.values(packageCounts);
+
                     pieInstance.current = new Chart(ctx, {
                         type: 'doughnut',
                         data: {
                             labels: labels.length ? labels : ['ไม่มีข้อมูล'],
                             datasets: [{
                                 data: data.length ? data : [1],
-                                backgroundColor: ['rgba(255, 0, 0, 0.8)', 'rgba(255, 71, 87, 0.7)', 'rgba(255, 165, 2, 0.7)', 'rgba(30, 144, 255, 0.7)', 'rgba(46, 213, 115, 0.7)'],
-                                borderWidth: 0,
+                                backgroundColor: [
+                                    'rgba(255, 0, 0, 0.8)',
+                                    'rgba(255, 71, 87, 0.7)',
+                                    'rgba(255, 165, 2, 0.7)',
+                                    'rgba(30, 144, 255, 0.7)',
+                                    'rgba(46, 213, 115, 0.7)',
+                                    'rgba(160, 160, 176, 0.7)',
+                                ],
+                                borderWidth: 3,
+                                borderColor: isDark ? '#1a1a25' : '#ffffff',
+                                hoverBorderWidth: 4,
                             }]
                         },
                         options: {
@@ -1353,16 +2082,16 @@
                                     position: 'bottom',
                                     labels: {
                                         color: isDark ? '#aaa' : '#555',
-                                        padding: 12,
+                                        padding: 20,
                                         usePointStyle: true,
-                                        pointStyleWidth: 8,
-                                        font: { size: 10 }
+                                        pointStyleWidth: 10,
                                     }
                                 }
                             }
                         }
                     });
                 }
+
                 return () => {
                     if (barInstance.current) barInstance.current.destroy();
                     if (pieInstance.current) pieInstance.current.destroy();
@@ -1371,8 +2100,11 @@
 
             const daysRemaining = (expiryDate) => {
                 if (!expiryDate) return '-';
-                try { return Math.ceil((new Date(expiryDate) - new Date()) / (1000 * 60 * 60 * 24)); }
-                catch (e) { return '-'; }
+                try {
+                    return Math.ceil((new Date(expiryDate) - new Date()) / (1000 * 60 * 60 * 24));
+                } catch (e) {
+                    return '-';
+                }
             };
 
             return (
@@ -1381,85 +2113,129 @@
                         <h1 className="page-title">
                             <span className="icon">📊</span> แดชบอร์ด
                         </h1>
-                        <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                            {new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}
-                        </span>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                            <span style={{ fontSize: 'clamp(11px, 1.5vw, 13px)', color: 'var(--text-secondary)' }}>
+                                <i className="fa-solid fa-calendar-check"></i> {new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}
+                            </span>
+                        </div>
                     </div>
 
                     <div className="stats-grid">
-                        <div className="stat-card">
-                            <div className="stat-icon"><i className="fa-solid fa-users" style={{ color: 'var(--info)' }}></i></div>
+                        <div className="stat-card glass-card">
+                            <div className="stat-icon"><i className="fa-solid fa-users"></i></div>
                             <div className="stat-info">
                                 <h3>{totalCustomers}</h3>
                                 <p>ลูกค้าทั้งหมด</p>
+                                <div className="stat-trend up"><i className="fa-solid fa-arrow-up"></i> ทั้งหมด</div>
                             </div>
                         </div>
-                        <div className="stat-card">
-                            <div className="stat-icon"><i className="fa-solid fa-layer-group" style={{ color: 'var(--warning)' }}></i></div>
+                        <div className="stat-card glass-card">
+                            <div className="stat-icon"><i className="fa-solid fa-layer-group"></i></div>
                             <div className="stat-info">
                                 <h3>{Object.keys(packageCounts).length}</h3>
-                                <p>แพ็คเกจ</p>
+                                <p>ประเภทแพ็คเกจ</p>
+                                <div className="stat-trend up"><i className="fa-solid fa-chart-simple"></i> หลากหลาย</div>
                             </div>
                         </div>
-                        <div className="stat-card">
-                            <div className="stat-icon"><i className="fa-solid fa-house-circle-check" style={{ color: 'var(--success)' }}></i></div>
+                        <div className="stat-card glass-card">
+                            <div className="stat-icon"><i className="fa-solid fa-house-circle-check"></i></div>
                             <div className="stat-info">
                                 <h3>{availableHeads.length}</h3>
-                                <p>หัวบ้านว่าง</p>
+                                <p>หัวบ้านที่ว่าง</p>
+                                <div className="stat-trend up"><i className="fa-solid fa-door-open"></i> พร้อมใช้งาน</div>
                             </div>
                         </div>
-                        <div className="stat-card">
-                            <div className="stat-icon"><i className="fa-solid fa-clock-rotate-left" style={{ color: 'var(--danger)' }}></i></div>
+                        <div className="stat-card glass-card">
+                            <div className="stat-icon"><i className="fa-solid fa-clock-rotate-left"></i></div>
                             <div className="stat-info">
                                 <h3>{expiringSoon.length}</h3>
                                 <p>ใกล้หมดอายุ</p>
+                                <div className="stat-trend down"><i className="fa-solid fa-exclamation-triangle"></i> ต้องต่ออายุ</div>
                             </div>
                         </div>
                     </div>
 
                     <div className="charts-row">
                         <div className="glass-card">
-                            <div className="chart-title"><i className="fa-solid fa-chart-bar"></i> ตามแพ็คเกจ</div>
-                            <div className="chart-container"><canvas ref={barChartRef}></canvas></div>
+                            <div className="chart-title">
+                                <i className="fa-solid fa-chart-bar"></i> จำนวนลูกค้าตามแพ็คเกจ
+                            </div>
+                            <div className="chart-container">
+                                <canvas ref={barChartRef}></canvas>
+                            </div>
                         </div>
                         <div className="glass-card">
-                            <div className="chart-title"><i className="fa-solid fa-chart-pie"></i> สัดส่วน</div>
-                            <div className="chart-container"><canvas ref={pieChartRef}></canvas></div>
+                            <div className="chart-title">
+                                <i className="fa-solid fa-chart-pie"></i> สัดส่วนแพ็คเกจ
+                            </div>
+                            <div className="chart-container">
+                                <canvas ref={pieChartRef}></canvas>
+                            </div>
                         </div>
                     </div>
 
                     <div className="glass-card">
-                        <div className="chart-title" style={{ marginBottom: '12px' }}><i className="fa-solid fa-clock"></i> ล่าสุด</div>
+                        <div className="chart-title" style={{ marginBottom: '20px' }}>
+                            <i className="fa-solid fa-clock"></i> ลูกค้าล่าสุด
+                        </div>
                         <div className="table-wrapper">
                             <table>
                                 <thead>
                                     <tr>
-                                        <th>อีเมล</th>
-                                        <th>บัญชี</th>
-                                        <th>แพ็คเกจ</th>
-                                        <th>คงเหลือ</th>
+                                        <th><i className="fa-solid fa-envelope"></i> อีเมล</th>
+                                        <th><i className="fa-solid fa-user"></i> ชื่อบัญชี</th>
+                                        <th><i className="fa-solid fa-box"></i> แพ็คเกจ</th>
+                                        <th><i className="fa-solid fa-store"></i> ร้านค้า</th>
+                                        <th><i className="fa-solid fa-circle"></i> สถานะ</th>
+                                        <th><i className="fa-solid fa-calendar"></i> คงเหลือ</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {filteredCustomers.slice(0, 5).map((c, i) => {
+                                    {latestCustomers.length > 0 ? latestCustomers.map((c, i) => {
                                         const remaining = daysRemaining(c.expiryDate);
                                         return (
                                             <tr key={i}>
-                                                <td style={{ fontSize: '12px' }}>{c.email}</td>
-                                                <td><strong style={{ fontSize: '12px' }}>{c.accountName}</strong></td>
+                                                <td>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        <div style={{
+                                                            width: 'clamp(28px, 4vw, 32px)', height: 'clamp(28px, 4vw, 32px)', borderRadius: '50%',
+                                                            background: 'var(--active-bg)', display: 'flex',
+                                                            alignItems: 'center', justifyContent: 'center',
+                                                            fontSize: 'clamp(12px, 1.8vw, 14px)'
+                                                        }}>
+                                                            {c.email?.charAt(0).toUpperCase() || '?'}
+                                                        </div>
+                                                        {c.email}
+                                                    </div>
+                                                </td>
+                                                <td><strong>{c.accountName}</strong></td>
                                                 <td><span className="badge badge-info">{c.package}</span></td>
+                                                <td>{c.storeName}</td>
+                                                <td>
+                                                    {c.status === 'active' || c.status === 'ใช้งาน' ? (
+                                                        <span className="badge badge-success"><span className="status-dot active"></span> ใช้งาน</span>
+                                                    ) : c.status === 'ว่าง' || c.status === 'available' ? (
+                                                        <span className="badge badge-info"><span className="status-dot active"></span> ว่าง</span>
+                                                    ) : (
+                                                        <span className="badge badge-warning">{c.status || 'รอตรวจสอบ'}</span>
+                                                    )}
+                                                </td>
                                                 <td>
                                                     {remaining !== '-' ? (
                                                         <span className={`badge ${remaining <= 2 ? 'badge-danger' : remaining <= 7 ? 'badge-warning' : 'badge-success'}`}>
+                                                            {remaining <= 2 && <i className="fa-solid fa-exclamation-circle"></i>}
                                                             {remaining} วัน
                                                         </span>
                                                     ) : '-'}
                                                 </td>
                                             </tr>
                                         );
-                                    })}
-                                    {filteredCustomers.length === 0 && (
-                                        <tr><td colSpan="4" className="empty-state"><i className="fa-solid fa-inbox"></i><p>ไม่มีข้อมูล</p></td></tr>
+                                    }) : (
+                                        <tr><td colSpan="6" className="empty-state">
+                                            <i className="fa-solid fa-inbox"></i>
+                                            <p>ไม่มีข้อมูลลูกค้า</p>
+                                            <p style={{ fontSize: 'clamp(11px, 1.6vw, 13px)' }}>เริ่มต้นด้วยการเพิ่มลูกค้าใหม่</p>
+                                        </td></tr>
                                     )}
                                 </tbody>
                             </table>
@@ -1469,6 +2245,7 @@
             );
         };
 
+        // ==================== CUSTOMERS PAGE ====================
         const CustomersPage = () => {
             const { customers, user, callAPI, fetchCustomers, showToast } = useApp();
             const isAdmin = user?.rank === 1;
@@ -1481,7 +2258,11 @@
             });
 
             const filteredCustomers = (isAdmin ? customers : customers.filter(c => c.storeName === user?.storeName))
-                .filter(c => c.email?.toLowerCase().includes(search.toLowerCase()) || c.accountName?.toLowerCase().includes(search.toLowerCase()));
+                .filter(c =>
+                    c.email?.toLowerCase().includes(search.toLowerCase()) ||
+                    c.accountName?.toLowerCase().includes(search.toLowerCase()) ||
+                    c.storeName?.toLowerCase().includes(search.toLowerCase())
+                );
 
             const openAdd = () => {
                 setEditingCustomer(null);
@@ -1495,9 +2276,13 @@
             const openEdit = (customer) => {
                 setEditingCustomer(customer);
                 setForm({
-                    email: customer.email || '', accountName: customer.accountName || '', package: customer.package || '1 เดือน',
-                    storeName: customer.storeName || '', houseHead: customer.houseHead || '',
-                    purchaseDate: customer.purchaseDate || '', expiryDate: customer.expiryDate || '',
+                    email: customer.email || '',
+                    accountName: customer.accountName || '',
+                    package: customer.package || '1 เดือน',
+                    storeName: customer.storeName || '',
+                    houseHead: customer.houseHead || '',
+                    purchaseDate: customer.purchaseDate || '',
+                    expiryDate: customer.expiryDate || '',
                     notificationEmail: customer.notificationEmail || '',
                 });
                 setShowModal(true);
@@ -1510,135 +2295,250 @@
                 }
                 try {
                     if (editingCustomer) {
-                        await callAPI('updateCustomer', { ...form, id: editingCustomer.id || editingCustomer._id });
-                        showToast('อัปเดตสำเร็จ', 'success');
+                        await callAPI('updateCustomer', {
+                            ...form,
+                            id: editingCustomer.id || editingCustomer._id
+                        });
+                        showToast('อัปเดตข้อมูลสำเร็จ', 'success');
                     } else {
                         await callAPI('addCustomer', form);
                         showToast('เพิ่มลูกค้าสำเร็จ', 'success');
                     }
                     setShowModal(false);
                     await fetchCustomers();
-                } catch (e) {}
+                } catch (e) {
+                    showToast('เกิดข้อผิดพลาด: ' + e.message, 'danger');
+                }
             };
 
             const handleDelete = async (customer) => {
-                if (!confirm(`ลบ "${customer.email}" ?`)) return;
+                if (!confirm(`⚠️ ต้องการลบลูกค้า "${customer.email}" ใช่หรือไม่?\nการกระทำนี้ไม่สามารถย้อนกลับได้`)) return;
                 try {
                     await callAPI('deleteCustomer', { id: customer.id || customer._id });
-                    showToast('ลบสำเร็จ', 'success');
+                    showToast('ลบข้อมูลสำเร็จ', 'success');
                     await fetchCustomers();
-                } catch (e) {}
+                } catch (e) {
+                    showToast('เกิดข้อผิดพลาด', 'danger');
+                }
             };
 
             const daysRemaining = (expiryDate) => {
                 if (!expiryDate) return '-';
-                try { return Math.ceil((new Date(expiryDate) - new Date()) / (1000 * 60 * 60 * 24)); }
-                catch (e) { return '-'; }
+                try {
+                    return Math.ceil((new Date(expiryDate) - new Date()) / (1000 * 60 * 60 * 24));
+                } catch (e) {
+                    return '-';
+                }
             };
 
             return (
                 <div>
                     <div className="top-bar">
-                        <h1 className="page-title"><span className="icon">👥</span> จัดการลูกค้า</h1>
-                        <button className="btn btn-primary btn-sm" onClick={openAdd}>
-                            <i className="fa-solid fa-plus"></i> เพิ่ม
-                        </button>
+                        <h1 className="page-title">
+                            <span className="icon">👥</span> จัดการลูกค้า
+                        </h1>
+                        <div style={{ display: 'flex', gap: 'clamp(6px, 1.5vw, 10px)', flexWrap: 'wrap' }}>
+                            <span className="badge badge-info" style={{ fontSize: 'clamp(11px, 1.5vw, 13px)' }}>
+                                <i className="fa-solid fa-list"></i> {filteredCustomers.length} รายการ
+                            </span>
+                            <button className="btn btn-primary" onClick={openAdd}>
+                                <i className="fa-solid fa-plus"></i> เพิ่มลูกค้า
+                            </button>
+                        </div>
                     </div>
 
                     <div className="search-box">
                         <i className="fa-solid fa-magnifying-glass search-icon"></i>
                         <input
                             className="input-field"
-                            placeholder="ค้นหาอีเมล, ชื่อบัญชี..."
+                            placeholder="🔍 ค้นหาด้วยอีเมล, ชื่อบัญชี, ร้านค้า..."
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                         />
                     </div>
 
-                    <div className="table-wrapper" style={{ background: 'var(--glass-bg)', borderRadius: 'var(--radius-lg)', padding: '8px', backdropFilter: 'blur(20px)' }}>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>อีเมล</th>
-                                    <th>บัญชี</th>
-                                    <th>แพ็คเกจ</th>
-                                    <th>คงเหลือ</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredCustomers.map((c, i) => {
-                                    const remaining = daysRemaining(c.expiryDate);
-                                    return (
-                                        <tr key={i}>
-                                            <td style={{ fontSize: '12px' }}>{c.email}</td>
-                                            <td><strong style={{ fontSize: '12px' }}>{c.accountName}</strong></td>
-                                            <td><span className="badge badge-info">{c.package}</span></td>
-                                            <td>
-                                                {remaining !== '-' ? (
-                                                    <span className={`badge ${remaining <= 2 ? 'badge-danger' : remaining <= 7 ? 'badge-warning' : 'badge-success'}`}>
-                                                        {remaining} วัน
-                                                    </span>
-                                                ) : '-'}
-                                            </td>
-                                            <td>
-                                                <div style={{ display: 'flex', gap: '4px' }}>
-                                                    <button className="btn btn-sm" onClick={() => openEdit(c)} style={{ padding: '4px 8px', fontSize: '10px' }}>
-                                                        <i className="fa-solid fa-pen-to-square"></i>
-                                                    </button>
-                                                    <button className="btn btn-danger btn-sm" onClick={() => handleDelete(c)} style={{ padding: '4px 8px', fontSize: '10px' }}>
-                                                        <i className="fa-solid fa-trash-can"></i>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                                {filteredCustomers.length === 0 && (
-                                    <tr><td colSpan="5" className="empty-state"><i className="fa-solid fa-inbox"></i><p>ไม่พบข้อมูล</p></td></tr>
-                                )}
-                            </tbody>
-                        </table>
+                    <div className="glass-card">
+                        <div className="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th><i className="fa-solid fa-envelope"></i> อีเมล</th>
+                                        <th><i className="fa-solid fa-user"></i> ชื่อบัญชี</th>
+                                        <th><i className="fa-solid fa-box"></i> แพ็คเกจ</th>
+                                        <th><i className="fa-solid fa-store"></i> ร้านค้า</th>
+                                        <th><i className="fa-solid fa-house"></i> หัวบ้าน</th>
+                                        <th><i className="fa-solid fa-calendar-plus"></i> วันที่ซื้อ</th>
+                                        <th><i className="fa-solid fa-calendar-xmark"></i> วันที่หมดอายุ</th>
+                                        <th><i className="fa-solid fa-hourglass-half"></i> คงเหลือ</th>
+                                        <th><i className="fa-solid fa-gear"></i> จัดการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredCustomers.length > 0 ? filteredCustomers.map((c, i) => {
+                                        const remaining = daysRemaining(c.expiryDate);
+                                        return (
+                                            <tr key={i}>
+                                                <td>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(6px, 1vw, 8px)' }}>
+                                                        <div style={{
+                                                            width: 'clamp(28px, 4vw, 32px)', height: 'clamp(28px, 4vw, 32px)', borderRadius: '50%',
+                                                            background: 'var(--active-bg)', display: 'flex',
+                                                            alignItems: 'center', justifyContent: 'center',
+                                                            fontSize: 'clamp(11px, 1.6vw, 13px)', fontWeight: 600
+                                                        }}>
+                                                            {c.email?.charAt(0).toUpperCase() || '?'}
+                                                        </div>
+                                                        <span style={{ fontSize: 'clamp(11px, 1.6vw, 13px)' }}>{c.email}</span>
+                                                    </div>
+                                                </td>
+                                                <td><strong>{c.accountName}</strong></td>
+                                                <td><span className="badge badge-info">{c.package}</span></td>
+                                                <td><span className="badge" style={{ background: 'var(--hover-bg)' }}>{c.storeName}</span></td>
+                                                <td>{c.houseHead || <span style={{ color: 'var(--text-tertiary)' }}>-</span>}</td>
+                                                <td>{c.purchaseDate || '-'}</td>
+                                                <td>{c.expiryDate || '-'}</td>
+                                                <td>
+                                                    {remaining !== '-' ? (
+                                                        <span className={`badge ${remaining <= 2 ? 'badge-danger' : remaining <= 7 ? 'badge-warning' : 'badge-success'}`}>
+                                                            {remaining <= 2 && <i className="fa-solid fa-exclamation-triangle"></i>}
+                                                            {remaining} วัน
+                                                        </span>
+                                                    ) : <span style={{ color: 'var(--text-tertiary)' }}>-</span>}
+                                                </td>
+                                                <td>
+                                                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                                                        <button
+                                                            className="btn btn-secondary btn-sm"
+                                                            onClick={() => openEdit(c)}
+                                                            title="แก้ไข"
+                                                        >
+                                                            <i className="fa-solid fa-pen-to-square"></i>
+                                                        </button>
+                                                        <button
+                                                            className="btn btn-danger btn-sm"
+                                                            onClick={() => handleDelete(c)}
+                                                            title="ลบ"
+                                                        >
+                                                            <i className="fa-solid fa-trash-can"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    }) : (
+                                        <tr><td colSpan="9" className="empty-state">
+                                            <i className="fa-solid fa-inbox"></i>
+                                            <p>ไม่พบข้อมูลลูกค้า</p>
+                                            <p style={{ fontSize: 'clamp(11px, 1.6vw, 13px)' }}>ลองเปลี่ยนคำค้นหาหรือเพิ่มลูกค้าใหม่</p>
+                                        </td></tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
 
                     {showModal && (
                         <div className="modal-overlay" onClick={() => setShowModal(false)}>
                             <div className="modal" onClick={e => e.stopPropagation()}>
-                                <h2>{editingCustomer ? 'แก้ไขลูกค้า' : 'เพิ่มลูกค้าใหม่'}</h2>
+                                <h2>
+                                    <i className={`fa-solid ${editingCustomer ? 'fa-pen-to-square' : 'fa-plus-circle'}`}></i>
+                                    {editingCustomer ? 'แก้ไขข้อมูลลูกค้า' : 'เพิ่มลูกค้าใหม่'}
+                                </h2>
                                 <div className="grid-2">
                                     <div className="input-group">
-                                        <label>อีเมล *</label>
-                                        <input className="input-field" type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="example@email.com" />
+                                        <label><i className="fa-solid fa-envelope"></i> อีเมล *</label>
+                                        <input
+                                            className="input-field"
+                                            type="email"
+                                            value={form.email}
+                                            onChange={e => setForm({ ...form, email: e.target.value })}
+                                            placeholder="example@email.com"
+                                        />
                                     </div>
                                     <div className="input-group">
-                                        <label>ชื่อบัญชี *</label>
-                                        <input className="input-field" value={form.accountName} onChange={e => setForm({ ...form, accountName: e.target.value })} placeholder="ชื่อบัญชี YouTube" />
+                                        <label><i className="fa-solid fa-user"></i> ชื่อบัญชี *</label>
+                                        <input
+                                            className="input-field"
+                                            value={form.accountName}
+                                            onChange={e => setForm({ ...form, accountName: e.target.value })}
+                                            placeholder="ชื่อบัญชี YouTube"
+                                        />
                                     </div>
                                     <div className="input-group">
-                                        <label>แพ็คเกจ</label>
-                                        <select className="input-field" value={form.package} onChange={e => setForm({ ...form, package: e.target.value })}>
-                                            {Array.from({ length: 12 }, (_, i) => (
-                                                <option key={i} value={`${i+1} เดือน`}>{`${i+1} เดือน`}</option>
-                                            ))}
+                                        <label><i className="fa-solid fa-box"></i> แพ็คเกจ</label>
+                                        <select
+                                            className="input-field"
+                                            value={form.package}
+                                            onChange={e => setForm({ ...form, package: e.target.value })}
+                                        >
+                                            <option value="1 เดือน">1 เดือน</option>
+                                            <option value="2 เดือน">2 เดือน</option>
+                                            <option value="3 เดือน">3 เดือน</option>
+                                            <option value="4 เดือน">4 เดือน</option>
+                                            <option value="5 เดือน">5 เดือน</option>
+                                            <option value="6 เดือน">6 เดือน</option>
+                                            <option value="7 เดือน">7 เดือน</option>
+                                            <option value="8 เดือน">8 เดือน</option>
+                                            <option value="9 เดือน">9 เดือน</option>
+                                            <option value="10 เดือน">10 เดือน</option>
+                                            <option value="11 เดือน">11 เดือน</option>
+                                            <option value="12 เดือน">12 เดือน</option>
                                         </select>
                                     </div>
                                     <div className="input-group">
-                                        <label>ร้านค้า</label>
-                                        <input className="input-field" value={form.storeName} onChange={e => setForm({ ...form, storeName: e.target.value })} disabled={!isAdmin} />
+                                        <label><i className="fa-solid fa-store"></i> ร้านค้า</label>
+                                        <input
+                                            className="input-field"
+                                            value={form.storeName}
+                                            onChange={e => setForm({ ...form, storeName: e.target.value })}
+                                            disabled={!isAdmin}
+                                        />
                                     </div>
                                     <div className="input-group">
-                                        <label>วันที่หมดอายุ</label>
-                                        <input className="input-field" type="date" value={form.expiryDate} onChange={e => setForm({ ...form, expiryDate: e.target.value })} />
+                                        <label><i className="fa-solid fa-house"></i> หัวบ้าน</label>
+                                        <input
+                                            className="input-field"
+                                            value={form.houseHead}
+                                            onChange={e => setForm({ ...form, houseHead: e.target.value })}
+                                            placeholder="ชื่อหัวบ้าน (ถ้ามี)"
+                                        />
                                     </div>
                                     <div className="input-group">
-                                        <label>อีเมลแจ้งเตือน</label>
-                                        <input className="input-field" type="email" value={form.notificationEmail} onChange={e => setForm({ ...form, notificationEmail: e.target.value })} placeholder="email@example.com" />
+                                        <label><i className="fa-solid fa-calendar-plus"></i> วันที่ซื้อ</label>
+                                        <input
+                                            className="input-field"
+                                            type="date"
+                                            value={form.purchaseDate}
+                                            onChange={e => setForm({ ...form, purchaseDate: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label><i className="fa-solid fa-calendar-xmark"></i> วันที่หมดอายุ</label>
+                                        <input
+                                            className="input-field"
+                                            type="date"
+                                            value={form.expiryDate}
+                                            onChange={e => setForm({ ...form, expiryDate: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label><i className="fa-solid fa-bell"></i> อีเมลแจ้งเตือน</label>
+                                        <input
+                                            className="input-field"
+                                            type="email"
+                                            value={form.notificationEmail}
+                                            onChange={e => setForm({ ...form, notificationEmail: e.target.value })}
+                                            placeholder="email@example.com"
+                                        />
                                     </div>
                                 </div>
                                 <div className="modal-actions">
-                                    <button className="btn" onClick={() => setShowModal(false)}>ยกเลิก</button>
+                                    <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
+                                        <i className="fa-solid fa-xmark"></i> ยกเลิก
+                                    </button>
                                     <button className="btn btn-primary" onClick={handleSubmit}>
-                                        {editingCustomer ? 'บันทึก' : 'เพิ่มลูกค้า'}
+                                        <i className={`fa-solid fa-${editingCustomer ? 'check' : 'plus'}`}></i>
+                                        {editingCustomer ? 'บันทึกการแก้ไข' : 'เพิ่มลูกค้า'}
                                     </button>
                                 </div>
                             </div>
@@ -1648,74 +2548,160 @@
             );
         };
 
+        // ==================== CHECK PAGE ====================
         const CheckPage = () => {
             const { customers, user } = useApp();
             const isAdmin = user?.rank === 1;
             const [searchEmail, setSearchEmail] = useState('');
             const [result, setResult] = useState(null);
             const [searched, setSearched] = useState(false);
+            const [searching, setSearching] = useState(false);
 
             const handleSearch = () => {
-                if (!searchEmail.trim()) return;
-                const filtered = isAdmin ? customers : customers.filter(c => c.storeName === user?.storeName);
-                const found = filtered.find(c => c.email?.toLowerCase() === searchEmail.toLowerCase());
-                setResult(found || null);
-                setSearched(true);
+                if (!searchEmail.trim()) {
+                    return;
+                }
+
+                setSearching(true);
+                setSearched(false);
+
+                // จำลองการค้นหา (ใช้ข้อมูลที่มีอยู่แล้ว)
+                setTimeout(() => {
+                    const filtered = isAdmin ? customers : customers.filter(c => c.storeName === user?.storeName);
+                    const found = filtered.find(c =>
+                        c.email?.toLowerCase() === searchEmail.toLowerCase()
+                    );
+                    setResult(found || null);
+                    setSearched(true);
+                    setSearching(false);
+                }, 300);
             };
 
             const daysRemaining = (expiryDate) => {
                 if (!expiryDate) return null;
-                try { return Math.ceil((new Date(expiryDate) - new Date()) / (1000 * 60 * 60 * 24)); }
-                catch (e) { return null; }
+                try {
+                    return Math.ceil((new Date(expiryDate) - new Date()) / (1000 * 60 * 60 * 24));
+                } catch (e) {
+                    return null;
+                }
             };
 
             return (
                 <div>
-                    <h1 className="page-title" style={{ marginBottom: '16px' }}><span className="icon">🔍</span> เช็คข้อมูล</h1>
-                    <div className="glass-card">
+                    <h1 className="page-title" style={{ marginBottom: 'clamp(20px, 3vw, 28px)' }}>
+                        <span className="icon">🔍</span> เช็คข้อมูล
+                    </h1>
+                    <div className="glass-card" style={{ maxWidth: 'min(95vw, 640px)', margin: '0 auto' }}>
                         <div className="search-box">
                             <i className="fa-solid fa-envelope search-icon"></i>
                             <input
                                 className="input-field"
                                 type="email"
-                                placeholder="กรอกอีเมลเพื่อค้นหา..."
+                                placeholder="กรอกอีเมลเพื่อค้นหาข้อมูลลูกค้า..."
                                 value={searchEmail}
                                 onChange={e => setSearchEmail(e.target.value)}
                                 onKeyDown={e => e.key === 'Enter' && handleSearch()}
                             />
                         </div>
-                        <button className="btn btn-primary" onClick={handleSearch} style={{ width: '100%', justifyContent: 'center', borderRadius: '50px' }}>
-                            <i className="fa-solid fa-magnifying-glass"></i> ค้นหา
+                        <button
+                            className="btn btn-primary"
+                            onClick={handleSearch}
+                            style={{ width: '100%', justifyContent: 'center', borderRadius: '50px', padding: 'clamp(12px, 2vw, 16px)' }}
+                            disabled={searching}
+                        >
+                            {searching ? (
+                                <>
+                                    <div className="spinner" style={{ width: 'clamp(16px, 2.5vw, 18px)', height: 'clamp(16px, 2.5vw, 18px)', borderWidth: '2px' }}></div>
+                                    กำลังค้นหา...
+                                </>
+                            ) : (
+                                <>
+                                    <i className="fa-solid fa-magnifying-glass"></i> ค้นหาข้อมูล
+                                </>
+                            )}
                         </button>
 
                         {searched && (
-                            <div style={{ marginTop: '20px' }}>
+                            <div style={{ marginTop: 'clamp(20px, 3vw, 28px)' }}>
                                 {result ? (
-                                    <div className="neo-card" style={{ padding: '16px', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-lg)', animation: 'slideUp 0.3s ease' }}>
-                                        <h3 style={{ marginBottom: '12px', color: 'var(--success)', fontSize: '16px' }}>
-                                            <i className="fa-solid fa-circle-check"></i> พบข้อมูล
+                                    <div className="neo-card" style={{ animation: 'slideUp 0.3s ease' }}>
+                                        <h3 style={{ marginBottom: 'clamp(16px, 2.5vw, 20px)', display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--success)', fontSize: 'clamp(16px, 2.5vw, 20px)' }}>
+                                            <i className="fa-solid fa-circle-check"></i>
+                                            พบข้อมูลลูกค้า
                                         </h3>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
-                                            <div><strong>อีเมล:</strong> {result.email}</div>
-                                            <div><strong>บัญชี:</strong> {result.accountName}</div>
-                                            <div><strong>แพ็คเกจ:</strong> <span className="badge badge-info">{result.package}</span></div>
-                                            <div><strong>หมดอายุ:</strong> {result.expiryDate || '-'}</div>
-                                            <div>
-                                                <strong>สถานะ:</strong>{' '}
-                                                {(() => {
-                                                    const remaining = daysRemaining(result.expiryDate);
-                                                    if (remaining === null) return <span className="badge badge-warning">ไม่ระบุ</span>;
-                                                    if (remaining < 0) return <span className="badge badge-danger">หมดอายุแล้ว</span>;
-                                                    if (remaining <= 2) return <span className="badge badge-danger">⚠️ เหลือ {remaining} วัน</span>;
-                                                    return <span className="badge badge-success">✅ เหลือ {remaining} วัน</span>;
-                                                })()}
-                                            </div>
-                                        </div>
+                                        <table style={{ width: '100%' }}>
+                                            <tbody>
+                                                <tr>
+                                                    <td style={{ fontWeight: 600, padding: 'clamp(8px, 1.5vw, 10px) 0', color: 'var(--text-secondary)', width: 'clamp(120px, 25vw, 140px)', fontSize: 'clamp(12px, 1.8vw, 14px)' }}>
+                                                        <i className="fa-solid fa-envelope"></i> อีเมล
+                                                    </td>
+                                                    <td style={{ fontWeight: 500, fontSize: 'clamp(12px, 1.8vw, 14px)' }}>{result.email}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td style={{ fontWeight: 600, padding: 'clamp(8px, 1.5vw, 10px) 0', color: 'var(--text-secondary)', fontSize: 'clamp(12px, 1.8vw, 14px)' }}>
+                                                        <i className="fa-solid fa-user"></i> ชื่อบัญชี
+                                                    </td>
+                                                    <td style={{ fontSize: 'clamp(12px, 1.8vw, 14px)' }}><strong>{result.accountName}</strong></td>
+                                                </tr>
+                                                <tr>
+                                                    <td style={{ fontWeight: 600, padding: 'clamp(8px, 1.5vw, 10px) 0', color: 'var(--text-secondary)', fontSize: 'clamp(12px, 1.8vw, 14px)' }}>
+                                                        <i className="fa-solid fa-box"></i> แพ็คเกจ
+                                                    </td>
+                                                    <td><span className="badge badge-info">{result.package}</span></td>
+                                                </tr>
+                                                <tr>
+                                                    <td style={{ fontWeight: 600, padding: 'clamp(8px, 1.5vw, 10px) 0', color: 'var(--text-secondary)', fontSize: 'clamp(12px, 1.8vw, 14px)' }}>
+                                                        <i className="fa-solid fa-calendar-plus"></i> วันที่เริ่มใช้งาน
+                                                    </td>
+                                                    <td style={{ fontSize: 'clamp(12px, 1.8vw, 14px)' }}>{result.purchaseDate || '-'}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td style={{ fontWeight: 600, padding: 'clamp(8px, 1.5vw, 10px) 0', color: 'var(--text-secondary)', fontSize: 'clamp(12px, 1.8vw, 14px)' }}>
+                                                        <i className="fa-solid fa-calendar-xmark"></i> วันที่หมดอายุ
+                                                    </td>
+                                                    <td style={{ fontSize: 'clamp(12px, 1.8vw, 14px)' }}><strong>{result.expiryDate || '-'}</strong></td>
+                                                </tr>
+                                                <tr>
+                                                    <td style={{ fontWeight: 600, padding: 'clamp(8px, 1.5vw, 10px) 0', color: 'var(--text-secondary)', fontSize: 'clamp(12px, 1.8vw, 14px)' }}>
+                                                        <i className="fa-solid fa-circle"></i> สถานะ
+                                                    </td>
+                                                    <td>
+                                                        {(() => {
+                                                            const remaining = daysRemaining(result.expiryDate);
+                                                            if (remaining === null)
+                                                                return <span className="badge badge-warning"><span className="status-dot expiring"></span> ไม่ระบุ</span>;
+                                                            if (remaining < 0)
+                                                                return <span className="badge badge-danger"><span className="status-dot expired"></span> หมดอายุแล้ว</span>;
+                                                            if (remaining <= 2)
+                                                                return <span className="badge badge-danger"><span className="status-dot expired"></span> ⚠️ ใกล้หมดอายุ (เหลือ {remaining} วัน)</span>;
+                                                            if (remaining <= 7)
+                                                                return <span className="badge badge-warning"><span className="status-dot expiring"></span> เหลือ {remaining} วัน</span>;
+                                                            return <span className="badge badge-success"><span className="status-dot active"></span> ✅ ใช้งานได้ (เหลือ {remaining} วัน)</span>;
+                                                        })()}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td style={{ fontWeight: 600, padding: 'clamp(8px, 1.5vw, 10px) 0', color: 'var(--text-secondary)', fontSize: 'clamp(12px, 1.8vw, 14px)' }}>
+                                                        <i className="fa-solid fa-store"></i> ร้านค้า
+                                                    </td>
+                                                    <td><span className="badge" style={{ background: 'var(--hover-bg)' }}>{result.storeName}</span></td>
+                                                </tr>
+                                                <tr>
+                                                    <td style={{ fontWeight: 600, padding: 'clamp(8px, 1.5vw, 10px) 0', color: 'var(--text-secondary)', fontSize: 'clamp(12px, 1.8vw, 14px)' }}>
+                                                        <i className="fa-solid fa-house"></i> หัวบ้าน
+                                                    </td>
+                                                    <td style={{ fontSize: 'clamp(12px, 1.8vw, 14px)' }}>{result.houseHead || <span style={{ color: 'var(--text-tertiary)' }}>-</span>}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
                                     </div>
                                 ) : (
-                                    <div className="empty-state">
+                                    <div className="empty-state" style={{ animation: 'slideUp 0.3s ease' }}>
                                         <i className="fa-solid fa-circle-exclamation" style={{ color: 'var(--warning)' }}></i>
-                                        <p>ไม่พบข้อมูล "{searchEmail}"</p>
+                                        <p style={{ fontWeight: 600, color: 'var(--text-primary)' }}>ไม่พบข้อมูล</p>
+                                        <p style={{ color: 'var(--text-secondary)', marginTop: '4px', fontSize: 'clamp(12px, 1.8vw, 14px)' }}>
+                                            ไม่พบลูกค้าที่ใช้อีเมล "{searchEmail}"
+                                        </p>
                                     </div>
                                 )}
                             </div>
@@ -1725,37 +2711,90 @@
             );
         };
 
+        // ==================== PROFILE PAGE ====================
         const ProfilePage = () => {
             const { user, logout } = useApp();
             return (
                 <div>
-                    <h1 className="page-title" style={{ marginBottom: '16px' }}><span className="icon">👤</span> โปรไฟล์</h1>
-                    <div className="glass-card" style={{ textAlign: 'center' }}>
-                        <div style={{ marginBottom: '20px' }}>
-                            <div className="user-avatar" style={{ width: '80px', height: '80px', margin: '0 auto 12px', fontSize: '32px' }}>
-                                {user?.pictureUrl ? <img src={user.pictureUrl} alt="" /> : <i className="fa-solid fa-user"></i>}
+                    <h1 className="page-title" style={{ marginBottom: 'clamp(20px, 3vw, 28px)' }}>
+                        <span className="icon">👤</span> โปรไฟล์
+                    </h1>
+                    <div className="glass-card" style={{ maxWidth: 'min(95vw, 540px)' }}>
+                        <div style={{ textAlign: 'center', marginBottom: 'clamp(24px, 4vw, 32px)' }}>
+                            <div className="user-avatar" style={{
+                                width: 'clamp(80px, 15vw, 100px)', height: 'clamp(80px, 15vw, 100px)', margin: '0 auto clamp(16px, 2vw, 20px)',
+                                fontSize: 'clamp(32px, 6vw, 40px)', borderWidth: '3px'
+                            }}>
+                                {user?.pictureUrl ? (
+                                    <img
+                                        src={user.pictureUrl}
+                                        alt=""
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                        onError={(e) => {
+                                            e.target.style.display = 'none';
+                                            const fallback = e.target.parentNode.querySelector('.avatar-fallback');
+                                            if (fallback) fallback.style.display = 'flex';
+                                        }}
+                                    />
+                                ) : null}
+                                <i className="fa-solid fa-user avatar-fallback" style={{ display: user?.pictureUrl ? 'none' : 'block' }}></i>
                             </div>
-                            <h2 style={{ fontSize: '18px' }}>{user?.lineName || 'ผู้ใช้งาน'}</h2>
-                            <div style={{ marginTop: '6px' }}>
+                            <h2 style={{ fontSize: 'clamp(18px, 3vw, 22px)' }}>{user?.lineName || 'ผู้ใช้งาน'}</h2>
+                            <div style={{ marginTop: 'clamp(6px, 1vw, 8px)' }}>
                                 {user?.rank === 1 ? (
-                                    <span className="badge badge-danger"><i className="fa-solid fa-crown"></i> แอดมิน</span>
+                                    <span className="badge badge-danger" style={{ fontSize: 'clamp(11px, 1.6vw, 13px)', padding: 'clamp(6px, 1vw, 8px) clamp(12px, 2vw, 16px)' }}>
+                                        <i className="fa-solid fa-crown"></i> แอดมิน
+                                    </span>
                                 ) : (
-                                    <span className="badge badge-info"><i className="fa-solid fa-user"></i> สมาชิก</span>
+                                    <span className="badge badge-info" style={{ fontSize: 'clamp(11px, 1.6vw, 13px)', padding: 'clamp(6px, 1vw, 8px) clamp(12px, 2vw, 16px)' }}>
+                                        <i className="fa-solid fa-user"></i> สมาชิก
+                                    </span>
                                 )}
                             </div>
                         </div>
-                        <div style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px', fontSize: '13px' }}>
-                            <div><strong>ร้านค้า:</strong> <span className="badge" style={{ background: 'var(--hover-bg)' }}>{user?.storeName || '-'}</span></div>
-                            <div><strong>LINE ID:</strong> <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px' }}>{user?.userId || '-'}</span></div>
+                        <table style={{ width: '100%' }}>
+                            <tbody>
+                                <tr>
+                                    <td style={{ fontWeight: 600, padding: 'clamp(8px, 1.5vw, 12px) 0', color: 'var(--text-secondary)', width: 'clamp(120px, 25vw, 150px)', fontSize: 'clamp(12px, 1.8vw, 14px)' }}>
+                                        <i className="fa-solid fa-id-card"></i> ชื่อไลน์
+                                    </td>
+                                    <td style={{ fontWeight: 500, fontSize: 'clamp(12px, 1.8vw, 14px)' }}>{user?.lineName || '-'}</td>
+                                </tr>
+                                <tr>
+                                    <td style={{ fontWeight: 600, padding: 'clamp(8px, 1.5vw, 12px) 0', color: 'var(--text-secondary)', fontSize: 'clamp(12px, 1.8vw, 14px)' }}>
+                                        <i className="fa-solid fa-store"></i> ร้านค้า
+                                    </td>
+                                    <td><span className="badge" style={{ background: 'var(--hover-bg)' }}>{user?.storeName || '-'}</span></td>
+                                </tr>
+                                <tr>
+                                    <td style={{ fontWeight: 600, padding: 'clamp(8px, 1.5vw, 12px) 0', color: 'var(--text-secondary)', fontSize: 'clamp(12px, 1.8vw, 14px)' }}>
+                                        <i className="fa-solid fa-fingerprint"></i> LINE User ID
+                                    </td>
+                                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(11px, 1.5vw, 12px)' }}>
+                                        {user?.userId || user?.id || '-'}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style={{ fontWeight: 600, padding: 'clamp(8px, 1.5vw, 12px) 0', color: 'var(--text-secondary)', fontSize: 'clamp(12px, 1.8vw, 14px)' }}>
+                                        <i className="fa-solid fa-calendar-check"></i> วันที่สมัคร
+                                    </td>
+                                    <td style={{ fontSize: 'clamp(12px, 1.8vw, 14px)' }}>{user?.createdAt ? new Date(user.createdAt).toLocaleDateString('th-TH', {
+                                        year: 'numeric', month: 'long', day: 'numeric'
+                                    }) : '-'}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div style={{ marginTop: 'clamp(24px, 4vw, 32px)', textAlign: 'center', paddingTop: 'clamp(16px, 2vw, 20px)', borderTop: '1px solid var(--border-color)' }}>
+                            <button className="btn btn-danger" onClick={logout} style={{ borderRadius: '50px', padding: 'clamp(10px, 1.8vw, 14px) clamp(24px, 4vw, 32px)' }}>
+                                <i className="fa-solid fa-right-from-bracket"></i> ออกจากระบบ
+                            </button>
                         </div>
-                        <button className="btn btn-danger" onClick={logout} style={{ borderRadius: '50px', width: '100%', justifyContent: 'center' }}>
-                            <i className="fa-solid fa-right-from-bracket"></i> ออกจากระบบ
-                        </button>
                     </div>
                 </div>
             );
         };
 
+        // ==================== USERS PAGE (ADMIN) ====================
         const UsersPage = () => {
             const { users, callAPI, fetchUsers, showToast, user: currentUser } = useApp();
             const [showModal, setShowModal] = useState(false);
@@ -1764,19 +2803,28 @@
 
             const openEdit = (u) => {
                 setEditingUser(u);
-                setForm({ lineName: u.lineName || '', storeName: u.storeName || '', rank: parseInt(u.rank) || 0 });
+                setForm({
+                    lineName: u.lineName || '',
+                    storeName: u.storeName || '',
+                    rank: parseInt(u.rank) || 0
+                });
                 setShowModal(true);
             };
 
             const handleSave = async () => {
                 try {
                     if (editingUser) {
-                        await callAPI('updateUser', { ...form, id: editingUser.id || editingUser._id });
+                        await callAPI('updateUser', {
+                            ...form,
+                            id: editingUser.id || editingUser._id
+                        });
                         showToast('อัปเดตผู้ใช้สำเร็จ', 'success');
                     }
                     setShowModal(false);
                     await fetchUsers();
-                } catch (e) {}
+                } catch (e) {
+                    showToast('เกิดข้อผิดพลาด: ' + e.message, 'danger');
+                }
             };
 
             const handleDelete = async (u) => {
@@ -1784,80 +2832,146 @@
                     showToast('ไม่สามารถลบบัญชีตัวเองได้', 'danger');
                     return;
                 }
-                if (!confirm(`ลบ "${u.lineName}" ?`)) return;
+                if (!confirm(`⚠️ ต้องการลบผู้ใช้ "${u.lineName}" ใช่หรือไม่?\nการกระทำนี้ไม่สามารถย้อนกลับได้`)) return;
                 try {
                     await callAPI('deleteUser', { id: u.id || u._id });
                     showToast('ลบผู้ใช้สำเร็จ', 'success');
                     await fetchUsers();
-                } catch (e) {}
+                } catch (e) {
+                    showToast('เกิดข้อผิดพลาด: ' + e.message, 'danger');
+                }
             };
 
             return (
                 <div>
                     <div className="top-bar">
-                        <h1 className="page-title"><span className="icon">🛡️</span> จัดการผู้ใช้</h1>
-                        <span className="badge" style={{ background: 'var(--hover-bg)' }}>{users.length} ผู้ใช้</span>
+                        <h1 className="page-title">
+                            <span className="icon">🛡️</span> จัดการผู้ใช้
+                        </h1>
+                        <span className="badge" style={{ background: 'var(--hover-bg)', fontSize: 'clamp(11px, 1.5vw, 13px)' }}>
+                            <i className="fa-solid fa-users"></i> {users.length} ผู้ใช้
+                        </span>
                     </div>
-                    <div className="table-wrapper" style={{ background: 'var(--glass-bg)', borderRadius: 'var(--radius-lg)', padding: '8px', backdropFilter: 'blur(20px)' }}>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>ชื่อไลน์</th>
-                                    <th>ร้านค้า</th>
-                                    <th>ระดับ</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {users.map((u, i) => (
-                                    <tr key={i}>
-                                        <td style={{ fontSize: '12px' }}>{u.lineName}</td>
-                                        <td><span className="badge" style={{ background: 'var(--hover-bg)' }}>{u.storeName}</span></td>
-                                        <td>
-                                            {u.rank === 1 ? <span className="badge badge-danger"><i className="fa-solid fa-crown"></i> แอดมิน</span> :
-                                                <span className="badge badge-info"><i className="fa-solid fa-user"></i> สมาชิก</span>}
-                                        </td>
-                                        <td>
-                                            <div style={{ display: 'flex', gap: '4px' }}>
-                                                <button className="btn btn-sm" onClick={() => openEdit(u)} style={{ padding: '4px 8px', fontSize: '10px' }}>
-                                                    <i className="fa-solid fa-pen-to-square"></i>
-                                                </button>
-                                                <button className="btn btn-danger btn-sm" onClick={() => handleDelete(u)} disabled={u.id === currentUser?.id} style={{ padding: '4px 8px', fontSize: '10px' }}>
-                                                    <i className="fa-solid fa-trash-can"></i>
-                                                </button>
-                                            </div>
-                                        </td>
+                    <div className="glass-card">
+                        <div className="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th><i className="fa-solid fa-user"></i> ชื่อไลน์</th>
+                                        <th><i className="fa-solid fa-store"></i> ชื่อร้านค้า</th>
+                                        <th><i className="fa-solid fa-shield"></i> ระดับ</th>
+                                        <th><i className="fa-solid fa-calendar-plus"></i> วันที่สร้าง</th>
+                                        <th><i className="fa-solid fa-clock"></i> เข้าสู่ระบบล่าสุด</th>
+                                        <th><i className="fa-solid fa-gear"></i> จัดการ</th>
                                     </tr>
-                                ))}
-                                {users.length === 0 && (
-                                    <tr><td colSpan="4" className="empty-state"><i className="fa-solid fa-users-slash"></i><p>ไม่มีข้อมูล</p></td></tr>
-                                )}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {users.length > 0 ? users.map((u, i) => (
+                                        <tr key={i} style={u.id === currentUser?.id ? { background: 'var(--hover-bg)' } : {}}>
+                                            <td>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(6px, 1vw, 10px)' }}>
+                                                    <div className="user-avatar" style={{ width: 'clamp(30px, 5vw, 36px)', height: 'clamp(30px, 5vw, 36px)', fontSize: 'clamp(12px, 1.8vw, 14px)' }}>
+                                                        {u.pictureUrl ? (
+                                                            <img
+                                                                src={u.pictureUrl}
+                                                                alt=""
+                                                                onError={(e) => { e.target.style.display = 'none'; }}
+                                                            />
+                                                        ) : (
+                                                            <i className="fa-solid fa-user"></i>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <div style={{ fontWeight: 600, fontSize: 'clamp(12px, 1.8vw, 14px)' }}>{u.lineName}</div>
+                                                        {u.id === currentUser?.id && (
+                                                            <span style={{ fontSize: 'clamp(9px, 1.2vw, 10px)', color: 'var(--accent)' }}>คุณ</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td><span className="badge" style={{ background: 'var(--hover-bg)' }}>{u.storeName}</span></td>
+                                            <td>
+                                                {u.rank === 1 ? (
+                                                    <span className="badge badge-danger">
+                                                        <i className="fa-solid fa-crown"></i> แอดมิน
+                                                    </span>
+                                                ) : (
+                                                    <span className="badge badge-info">
+                                                        <i className="fa-solid fa-user"></i> สมาชิก
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td>{u.createdAt ? new Date(u.createdAt).toLocaleDateString('th-TH') : '-'}</td>
+                                            <td>{u.lastLogin ? new Date(u.lastLogin).toLocaleString('th-TH') : '-'}</td>
+                                            <td>
+                                                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                                                    <button
+                                                        className="btn btn-secondary btn-sm"
+                                                        onClick={() => openEdit(u)}
+                                                        title="แก้ไข"
+                                                    >
+                                                        <i className="fa-solid fa-pen-to-square"></i>
+                                                    </button>
+                                                    <button
+                                                        className="btn btn-danger btn-sm"
+                                                        onClick={() => handleDelete(u)}
+                                                        disabled={u.id === currentUser?.id}
+                                                        title={u.id === currentUser?.id ? 'ไม่สามารถลบตัวเองได้' : 'ลบ'}
+                                                    >
+                                                        <i className="fa-solid fa-trash-can"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )) : (
+                                        <tr><td colSpan="6" className="empty-state">
+                                            <i className="fa-solid fa-users-slash"></i>
+                                            <p>ไม่มีข้อมูลผู้ใช้</p>
+                                        </td></tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
 
                     {showModal && (
                         <div className="modal-overlay" onClick={() => setShowModal(false)}>
                             <div className="modal" onClick={e => e.stopPropagation()}>
-                                <h2>แก้ไขผู้ใช้</h2>
+                                <h2><i className="fa-solid fa-pen-to-square"></i> แก้ไขผู้ใช้</h2>
                                 <div className="input-group">
-                                    <label>ชื่อไลน์</label>
-                                    <input className="input-field" value={form.lineName} onChange={e => setForm({ ...form, lineName: e.target.value })} />
+                                    <label><i className="fa-solid fa-id-card"></i> ชื่อไลน์</label>
+                                    <input
+                                        className="input-field"
+                                        value={form.lineName}
+                                        onChange={e => setForm({ ...form, lineName: e.target.value })}
+                                    />
                                 </div>
                                 <div className="input-group">
-                                    <label>ชื่อร้านค้า</label>
-                                    <input className="input-field" value={form.storeName} onChange={e => setForm({ ...form, storeName: e.target.value })} />
+                                    <label><i className="fa-solid fa-store"></i> ชื่อร้านค้า</label>
+                                    <input
+                                        className="input-field"
+                                        value={form.storeName}
+                                        onChange={e => setForm({ ...form, storeName: e.target.value })}
+                                    />
                                 </div>
                                 <div className="input-group">
-                                    <label>ระดับ</label>
-                                    <select className="input-field" value={form.rank} onChange={e => setForm({ ...form, rank: parseInt(e.target.value) })}>
+                                    <label><i className="fa-solid fa-shield"></i> ระดับ</label>
+                                    <select
+                                        className="input-field"
+                                        value={form.rank}
+                                        onChange={e => setForm({ ...form, rank: parseInt(e.target.value) })}
+                                    >
                                         <option value={0}>👤 สมาชิก</option>
                                         <option value={1}>👑 แอดมิน</option>
                                     </select>
                                 </div>
                                 <div className="modal-actions">
-                                    <button className="btn" onClick={() => setShowModal(false)}>ยกเลิก</button>
-                                    <button className="btn btn-primary" onClick={handleSave}>บันทึก</button>
+                                    <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
+                                        <i className="fa-solid fa-xmark"></i> ยกเลิก
+                                    </button>
+                                    <button className="btn btn-primary" onClick={handleSave}>
+                                        <i className="fa-solid fa-check"></i> บันทึก
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -1866,16 +2980,21 @@
             );
         };
 
+        // ==================== MAIN APP ====================
         const App = () => {
-            const { user, theme, loading, currentPage, toggleTheme } = useApp();
+            const {
+                user, theme, loading, currentPage, sidebarOpen, setSidebarOpen, toggleTheme
+            } = useApp();
+
             if (loading) return <LoadingScreen />;
+
             if (!user) {
                 return (
-                    <div data-theme={theme} style={{ height: '100%' }}>
+                    <div data-theme={theme}>
                         <LoginPage />
                         <Toast />
                         <DebugPanel />
-                        <button className="theme-toggle" onClick={toggleTheme}>
+                        <button className="theme-toggle" onClick={toggleTheme} title="เปลี่ยนธีม">
                             <i className={`fa-solid fa-${theme === 'dark' ? 'sun' : 'moon'}`}></i>
                         </button>
                     </div>
@@ -1894,30 +3013,53 @@
             };
 
             return (
-                <div data-theme={theme} style={{ height: '100%' }}>
+                <div data-theme={theme}>
                     <div className="app-container">
+                        {sidebarOpen && (
+                            <div
+                                onClick={() => setSidebarOpen(false)}
+                                style={{
+                                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+                                    backdropFilter: 'blur(4px)', zIndex: 99
+                                }}
+                            />
+                        )}
+
+                        <Sidebar />
+
                         <main className="main-content">
+                            <div className="mobile-menu-btn" onClick={() => setSidebarOpen(true)} style={{ marginBottom: 'clamp(12px, 2vw, 20px)' }}>
+                                <i className="fa-solid fa-bars"></i>
+                            </div>
                             {renderPage()}
                         </main>
+
                         <BottomNav />
                     </div>
                     <Toast />
                     <DebugPanel />
-                    <button className="theme-toggle" onClick={toggleTheme}>
+                    <button className="theme-toggle" onClick={toggleTheme} title="เปลี่ยนธีม">
                         <i className={`fa-solid fa-${theme === 'dark' ? 'sun' : 'moon'}`}></i>
                     </button>
                 </div>
             );
         };
 
+        // ==================== RENDER ====================
         addDebugLog('=== Starting React App ===', 'info');
+        addDebugLog(`LIFF ID: ${LIFF_ID}`, 'info');
+        addDebugLog(`API URL: ${APPS_SCRIPT_URL}`, 'info');
+        addDebugLog(`Theme: dark mode`, 'info');
+
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(
             <AppProvider>
                 <App />
             </AppProvider>
         );
+
         addDebugLog('=== React App Rendered ===', 'success');
     </script>
 </body>
+
 </html>
