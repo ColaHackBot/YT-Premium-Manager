@@ -1093,7 +1093,6 @@
             .input-field {
                 padding: clamp(8px, 2vw, 14px) clamp(12px, 3vw, 18px);
                 font-size: clamp(13px, 2.5vw, 16px);
-                /* ป้องกัน zoom บน iOS */
             }
 
             .badge {
@@ -1151,7 +1150,6 @@
 
             .search-box input {
                 font-size: 16px;
-                /* ป้องกัน zoom */
             }
         }
 
@@ -1381,7 +1379,6 @@
             if (debugLogs.length > 100) debugLogs.shift();
             console.log(`[${type.toUpperCase()}]`, message);
 
-            // Update DOM if debug panel exists
             const panel = document.getElementById('debug-panel');
             if (panel && panel.classList.contains('visible')) {
                 updateDebugPanel();
@@ -1406,16 +1403,13 @@
             static async initLiff() {
                 try {
                     addDebugLog(`Initializing LIFF with ID: ${LIFF_ID}`, 'info');
-
                     await liff.init({
                         liffId: LIFF_ID,
                         withLoginOnExternalBrowser: true
                     });
-
                     addDebugLog('LIFF initialized successfully', 'success');
                     addDebugLog(`LIFF Version: ${liff.getVersion()}`, 'info');
                     addDebugLog(`Is logged in: ${liff.isLoggedIn()}`, 'info');
-
                     return true;
                 } catch (error) {
                     addDebugLog(`LIFF initialization failed: ${error.message}`, 'error');
@@ -1427,13 +1421,11 @@
             static async login() {
                 addDebugLog('Starting LINE login process...', 'info');
                 addDebugLog(`Is logged in: ${liff.isLoggedIn()}`, 'info');
-
                 if (!liff.isLoggedIn()) {
                     addDebugLog('Not logged in, redirecting to LINE login...', 'warning');
                     liff.login();
                     return null;
                 }
-
                 addDebugLog('Already logged in, getting profile...', 'info');
                 return await this.getProfile();
             }
@@ -1441,13 +1433,10 @@
             static async getProfile() {
                 try {
                     addDebugLog('Getting LINE profile...', 'info');
-
                     const profile = await liff.getProfile();
                     addDebugLog(`Profile received: userId=${profile.userId}, name=${profile.displayName}`, 'success');
-
                     const idToken = liff.getIDToken();
                     addDebugLog(`ID Token: ${idToken ? idToken.substring(0, 50) + '...' : 'null'}`, 'info');
-
                     return {
                         userId: profile.userId,
                         displayName: profile.displayName,
@@ -1490,25 +1479,20 @@
             const [debugVisible, setDebugVisible] = useState(false);
             const [initError, setInitError] = useState(null);
 
-            // Initialize LIFF
             useEffect(() => {
                 const initApp = async () => {
                     addDebugLog('=== App Initialization Started ===', 'info');
                     addDebugLog(`API URL: ${APPS_SCRIPT_URL}`, 'info');
                     addDebugLog(`LIFF ID: ${LIFF_ID}`, 'info');
                     addDebugLog(`User Agent: ${navigator.userAgent}`, 'info');
-
                     setLoading(true);
-
                     try {
                         const initialized = await LineLoginService.initLiff();
                         setLiffReady(initialized);
-
                         if (initialized) {
                             if (LineLoginService.isLoggedIn()) {
                                 addDebugLog('User is logged in, loading profile...', 'info');
                                 const profile = await LineLoginService.getProfile();
-
                                 if (profile) {
                                     addDebugLog('Profile loaded, registering/logging in...', 'info');
                                     await registerOrLoginUser(profile);
@@ -1529,11 +1513,9 @@
                         addDebugLog(`Init error: ${error.message}`, 'error');
                         setInitError(error.message);
                     }
-
                     setLoading(false);
                     addDebugLog('=== App Initialization Completed ===', 'info');
                 };
-
                 initApp();
             }, []);
 
@@ -1559,29 +1541,20 @@
                         userRank: user?.rank || 0,
                         storeName: user?.storeName || 'My Shop'
                     };
-
                     addDebugLog(`API Call: ${action}`, 'info');
                     addDebugLog(`Request: ${JSON.stringify(requestData).substring(0, 200)}`, 'info');
-
-                    // ใช้ GET + payload เพื่อหลีกเลี่ยง CORS preflight
                     const payload = encodeURIComponent(JSON.stringify(requestData));
                     const url = `${APPS_SCRIPT_URL}?payload=${payload}`;
-
                     const response = await fetch(url, { method: 'GET' });
-
                     addDebugLog(`Response status: ${response.status} ${response.statusText}`, 'info');
-
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                     }
-
                     const data = await response.json();
                     addDebugLog(`Response: ${JSON.stringify(data).substring(0, 300)}`, data.error ? 'error' : 'success');
-
                     if (data.error) {
                         throw new Error(data.message || data.error);
                     }
-
                     return data;
                 } catch (error) {
                     addDebugLog(`API Error (${action}): ${error.message}`, 'error');
@@ -1593,7 +1566,6 @@
             const registerOrLoginUser = async (profile) => {
                 try {
                     addDebugLog(`Registering/Logging in: ${profile.userId}`, 'info');
-
                     const requestData = {
                         action: 'loginOrRegister',
                         userId: profile.userId,
@@ -1601,24 +1573,16 @@
                         pictureUrl: profile.pictureUrl,
                         idToken: profile.idToken,
                     };
-
-                    // ใช้ GET + payload เพื่อหลีกเลี่ยง CORS preflight
                     const payload = encodeURIComponent(JSON.stringify(requestData));
                     const url = `${APPS_SCRIPT_URL}?payload=${payload}`;
-
                     addDebugLog(`Login URL: ${url.substring(0, 100)}...`, 'info');
-
                     const response = await fetch(url, { method: 'GET' });
-
                     addDebugLog(`Login response status: ${response.status}`, 'info');
-
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                     }
-
                     const data = await response.json();
                     addDebugLog(`Login data: ${JSON.stringify(data).substring(0, 300)}`, data.success ? 'success' : 'error');
-
                     if (data.success && data.user) {
                         const userData = {
                             ...data.user,
@@ -1626,9 +1590,7 @@
                             pictureUrl: profile.pictureUrl,
                             rank: parseInt(data.user.rank) || 0
                         };
-
                         addDebugLog(`User logged in: ${userData.lineName} (${userData.rank === 1 ? 'Admin' : 'Member'})`, 'success');
-
                         setUser(userData);
                         showToast(`ยินดีต้อนรับ ${data.user.lineName || profile.displayName}`, 'success');
                     } else {
@@ -1642,16 +1604,13 @@
 
             const loginWithLine = async () => {
                 addDebugLog('=== Login button clicked ===', 'info');
-
                 if (!liffReady) {
                     const error = 'LIFF is not ready';
                     addDebugLog(error, 'error');
                     showToast('ระบบ LIFF ยังไม่พร้อมใช้งาน', 'danger');
                     return;
                 }
-
                 const profile = await LineLoginService.login();
-
                 if (profile) {
                     await registerOrLoginUser(profile);
                 }
@@ -1888,6 +1847,7 @@
             const navItems = [
                 { id: 'dashboard', label: 'แดชบอร์ด', icon: 'fa-chart-pie' },
                 { id: 'customers', label: 'จัดการลูกค้า', icon: 'fa-users' },
+                { id: 'househeads', label: 'หัวบ้าน', icon: 'fa-house-chimney' },
                 { id: 'check', label: 'เช็คข้อมูล', icon: 'fa-magnifying-glass' },
                 { id: 'profile', label: 'โปรไฟล์', icon: 'fa-user-circle' },
                 ...(isAdmin ? [{ id: 'users', label: 'จัดการผู้ใช้', icon: 'fa-user-shield' }] : []),
@@ -1945,6 +1905,7 @@
             const items = [
                 { id: 'dashboard', label: 'แดชบอร์ด', icon: 'fa-chart-pie' },
                 { id: 'customers', label: 'ลูกค้า', icon: 'fa-users' },
+                { id: 'househeads', label: 'หัวบ้าน', icon: 'fa-house-chimney' },
                 { id: 'check', label: 'ค้นหา', icon: 'fa-magnifying-glass' },
                 { id: 'profile', label: 'โปรไฟล์', icon: 'fa-user' },
                 ...(isAdmin ? [{ id: 'users', label: 'ผู้ใช้', icon: 'fa-user-shield' }] : []),
@@ -2471,18 +2432,9 @@
                                             value={form.package}
                                             onChange={e => setForm({ ...form, package: e.target.value })}
                                         >
-                                            <option value="1 เดือน">1 เดือน</option>
-                                            <option value="2 เดือน">2 เดือน</option>
-                                            <option value="3 เดือน">3 เดือน</option>
-                                            <option value="4 เดือน">4 เดือน</option>
-                                            <option value="5 เดือน">5 เดือน</option>
-                                            <option value="6 เดือน">6 เดือน</option>
-                                            <option value="7 เดือน">7 เดือน</option>
-                                            <option value="8 เดือน">8 เดือน</option>
-                                            <option value="9 เดือน">9 เดือน</option>
-                                            <option value="10 เดือน">10 เดือน</option>
-                                            <option value="11 เดือน">11 เดือน</option>
-                                            <option value="12 เดือน">12 เดือน</option>
+                                            {['1 เดือน','2 เดือน','3 เดือน','4 เดือน','5 เดือน','6 เดือน','7 เดือน','8 เดือน','9 เดือน','10 เดือน','11 เดือน','12 เดือน'].map(m => (
+                                                <option key={m} value={m}>{m}</option>
+                                            ))}
                                         </select>
                                     </div>
                                     <div className="input-group">
@@ -2500,7 +2452,7 @@
                                             className="input-field"
                                             value={form.houseHead}
                                             onChange={e => setForm({ ...form, houseHead: e.target.value })}
-                                            placeholder="ชื่อหัวบ้าน (ถ้ามี)"
+                                            placeholder="อีเมลหัวบ้าน (ถ้ามี)"
                                         />
                                     </div>
                                     <div className="input-group">
@@ -2548,6 +2500,449 @@
             );
         };
 
+        // ==================== HOUSE HEADS PAGE ====================
+        const HouseHeadsPage = () => {
+            const { user, callAPI, showToast } = useApp();
+            const isAdmin = user?.rank === 1;
+            const [houseHeads, setHouseHeads] = useState([]);
+            const [customers, setCustomers] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [showModal, setShowModal] = useState(false);
+            const [showAssignModal, setShowAssignModal] = useState(false);
+            const [editingHead, setEditingHead] = useState(null);
+            const [selectedHead, setSelectedHead] = useState(null);
+            const [form, setForm] = useState({
+                email: '', name: '', phone: '', storeName: user?.storeName || '',
+                status: 'active', notes: ''
+            });
+            const [searchCustomer, setSearchCustomer] = useState('');
+
+            const fetchHouseHeads = async () => {
+                setLoading(true);
+                try {
+                    const data = await callAPI('getHouseHeads');
+                    setHouseHeads(data.houseHeads || []);
+                } catch (e) {
+                    showToast('ไม่สามารถโหลดข้อมูลหัวบ้านได้', 'danger');
+                }
+                setLoading(false);
+            };
+
+            const fetchCustomers = async () => {
+                try {
+                    const data = await callAPI('getCustomers');
+                    const available = (data.customers || []).filter(c => 
+                        !c.houseHead || c.houseHead === '' || c.houseHead === 'undefined'
+                    );
+                    setCustomers(available);
+                } catch (e) {
+                    showToast('ไม่สามารถโหลดข้อมูลลูกค้าได้', 'danger');
+                }
+            };
+
+            useEffect(() => {
+                fetchHouseHeads();
+                fetchCustomers();
+            }, []);
+
+            const openAdd = () => {
+                setEditingHead(null);
+                setForm({
+                    email: '', name: '', phone: '', storeName: user?.storeName || '',
+                    status: 'active', notes: ''
+                });
+                setShowModal(true);
+            };
+
+            const openEdit = (head) => {
+                setEditingHead(head);
+                setForm({
+                    email: head.email || '',
+                    name: head.name || '',
+                    phone: head.phone || '',
+                    storeName: head.storeName || '',
+                    status: head.status || 'active',
+                    notes: head.notes || ''
+                });
+                setShowModal(true);
+            };
+
+            const openAssign = (head) => {
+                setSelectedHead(head);
+                setSearchCustomer('');
+                fetchCustomers();
+                setShowAssignModal(true);
+            };
+
+            const handleSubmit = async () => {
+                if (!form.email || !form.name) {
+                    showToast('กรุณากรอกอีเมลและชื่อหัวบ้าน', 'danger');
+                    return;
+                }
+                try {
+                    if (editingHead) {
+                        await callAPI('updateHouseHead', {
+                            ...form,
+                            id: editingHead.id
+                        });
+                        showToast('อัปเดตข้อมูลหัวบ้านสำเร็จ', 'success');
+                    } else {
+                        await callAPI('addHouseHead', form);
+                        showToast('เพิ่มหัวบ้านสำเร็จ', 'success');
+                    }
+                    setShowModal(false);
+                    await fetchHouseHeads();
+                } catch (e) {
+                    showToast('เกิดข้อผิดพลาด: ' + e.message, 'danger');
+                }
+            };
+
+            const handleDelete = async (head) => {
+                if (!confirm(`⚠️ ต้องการลบหัวบ้าน "${head.name}" (${head.email}) ใช่หรือไม่?\nสมาชิกในหัวบ้านจะถูกนำออกทั้งหมด`)) return;
+                try {
+                    await callAPI('deleteHouseHead', { id: head.id });
+                    showToast('ลบหัวบ้านสำเร็จ', 'success');
+                    await fetchHouseHeads();
+                    await fetchCustomers();
+                } catch (e) {
+                    showToast('เกิดข้อผิดพลาด: ' + e.message, 'danger');
+                }
+            };
+
+            const handleAssignCustomer = async (customerId) => {
+                try {
+                    await callAPI('assignCustomerToHouseHead', {
+                        customerId: customerId,
+                        houseHeadEmail: selectedHead.email
+                    });
+                    showToast('เพิ่มสมาชิกเข้าหัวบ้านสำเร็จ', 'success');
+                    await fetchHouseHeads();
+                    await fetchCustomers();
+                } catch (e) {
+                    showToast('เกิดข้อผิดพลาด: ' + e.message, 'danger');
+                }
+            };
+
+            const handleRemoveMember = async (customerId) => {
+                try {
+                    await callAPI('assignCustomerToHouseHead', {
+                        customerId: customerId,
+                        houseHeadEmail: ''
+                    });
+                    showToast('นำสมาชิกออกจากหัวบ้านสำเร็จ', 'success');
+                    await fetchHouseHeads();
+                    await fetchCustomers();
+                } catch (e) {
+                    showToast('เกิดข้อผิดพลาด: ' + e.message, 'danger');
+                }
+            };
+
+            const filteredAvailableCustomers = customers.filter(c =>
+                (c.email?.toLowerCase().includes(searchCustomer.toLowerCase()) ||
+                 c.accountName?.toLowerCase().includes(searchCustomer.toLowerCase()))
+            );
+
+            if (loading) {
+                return (
+                    <div className="loading-spinner">
+                        <div className="spinner"></div>
+                        <p>กำลังโหลดข้อมูลหัวบ้าน...</p>
+                    </div>
+                );
+            }
+
+            return (
+                <div>
+                    <div className="top-bar">
+                        <h1 className="page-title">
+                            <span className="icon">🏠</span> จัดการหัวบ้าน
+                        </h1>
+                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                            <span className="badge badge-info" style={{ fontSize: '13px' }}>
+                                <i className="fa-solid fa-house"></i> {houseHeads.length} หัวบ้าน
+                            </span>
+                            <button className="btn btn-primary" onClick={openAdd}>
+                                <i className="fa-solid fa-plus"></i> เพิ่มหัวบ้าน
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="glass-card">
+                        <div className="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th><i className="fa-solid fa-user"></i> หัวบ้าน</th>
+                                        <th><i className="fa-solid fa-envelope"></i> อีเมล</th>
+                                        <th><i className="fa-solid fa-phone"></i> เบอร์โทร</th>
+                                        <th><i className="fa-solid fa-store"></i> ร้านค้า</th>
+                                        <th><i className="fa-solid fa-users"></i> สมาชิก</th>
+                                        <th><i className="fa-solid fa-circle"></i> สถานะ</th>
+                                        <th><i className="fa-solid fa-gear"></i> จัดการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {houseHeads.length > 0 ? houseHeads.map((head, i) => {
+                                        const isFull = head.memberCount >= 5;
+                                        return (
+                                            <tr key={i}>
+                                                <td>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                        <div style={{
+                                                            width: '36px', height: '36px', borderRadius: '50%',
+                                                            background: 'var(--active-bg)', display: 'flex',
+                                                            alignItems: 'center', justifyContent: 'center',
+                                                            fontWeight: 600, fontSize: '14px'
+                                                        }}>
+                                                            {head.name?.charAt(0).toUpperCase() || '?'}
+                                                        </div>
+                                                        <div>
+                                                            <div style={{ fontWeight: 600 }}>{head.name}</div>
+                                                            {head.notes && <div style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>{head.notes}</div>}
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td style={{ fontSize: '13px' }}>{head.email}</td>
+                                                <td>{head.phone || <span style={{ color: 'var(--text-tertiary)' }}>-</span>}</td>
+                                                <td><span className="badge" style={{ background: 'var(--hover-bg)' }}>{head.storeName}</span></td>
+                                                <td>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                                        <span className={`badge ${isFull ? 'badge-danger' : 'badge-success'}`}>
+                                                            <i className={`fa-solid fa-${isFull ? 'users-slash' : 'users'}`}></i>
+                                                            {head.memberCount}/5
+                                                        </span>
+                                                        {head.members && head.members.length > 0 && (
+                                                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                                                                {head.members.map((m, mi) => (
+                                                                    <span key={mi} 
+                                                                        className="badge" 
+                                                                        style={{ 
+                                                                            background: 'var(--active-bg)', 
+                                                                            fontSize: '9px', 
+                                                                            padding: '2px 6px',
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            gap: '4px'
+                                                                        }}
+                                                                        title={m.email}
+                                                                    >
+                                                                        {m.accountName || m.email}
+                                                                        <i 
+                                                                            className="fa-solid fa-xmark" 
+                                                                            style={{ 
+                                                                                cursor: 'pointer', 
+                                                                                fontSize: '8px',
+                                                                                color: 'var(--danger)'
+                                                                            }}
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleRemoveMember(m.id);
+                                                                            }}
+                                                                        ></i>
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    {head.status === 'active' ? (
+                                                        <span className="badge badge-success"><span className="status-dot active"></span> ใช้งาน</span>
+                                                    ) : head.status === 'inactive' ? (
+                                                        <span className="badge badge-warning"><span className="status-dot expiring"></span> ไม่ใช้งาน</span>
+                                                    ) : (
+                                                        <span className="badge">{head.status}</span>
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                                                        <button
+                                                            className="btn btn-secondary btn-sm"
+                                                            onClick={() => openAssign(head)}
+                                                            disabled={isFull}
+                                                            title={isFull ? 'หัวบ้านเต็มแล้ว' : 'เพิ่มสมาชิก'}
+                                                        >
+                                                            <i className="fa-solid fa-user-plus"></i>
+                                                        </button>
+                                                        <button
+                                                            className="btn btn-secondary btn-sm"
+                                                            onClick={() => openEdit(head)}
+                                                            title="แก้ไข"
+                                                        >
+                                                            <i className="fa-solid fa-pen-to-square"></i>
+                                                        </button>
+                                                        <button
+                                                            className="btn btn-danger btn-sm"
+                                                            onClick={() => handleDelete(head)}
+                                                            title="ลบ"
+                                                        >
+                                                            <i className="fa-solid fa-trash-can"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    }) : (
+                                        <tr><td colSpan="7" className="empty-state">
+                                            <i className="fa-solid fa-house-circle-exclamation"></i>
+                                            <p>ไม่มีข้อมูลหัวบ้าน</p>
+                                            <p style={{ fontSize: '13px' }}>เพิ่มหัวบ้านเพื่อจัดการกลุ่มลูกค้า</p>
+                                        </td></tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* Modal เพิ่ม/แก้ไขหัวบ้าน */}
+                    {showModal && (
+                        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+                            <div className="modal" onClick={e => e.stopPropagation()}>
+                                <h2>
+                                    <i className={`fa-solid ${editingHead ? 'fa-pen-to-square' : 'fa-plus-circle'}`}></i>
+                                    {editingHead ? 'แก้ไขข้อมูลหัวบ้าน' : 'เพิ่มหัวบ้านใหม่'}
+                                </h2>
+                                <div className="grid-2">
+                                    <div className="input-group">
+                                        <label><i className="fa-solid fa-envelope"></i> อีเมล *</label>
+                                        <input
+                                            className="input-field"
+                                            type="email"
+                                            value={form.email}
+                                            onChange={e => setForm({...form, email: e.target.value})}
+                                            placeholder="email@example.com"
+                                            disabled={!!editingHead}
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label><i className="fa-solid fa-user"></i> ชื่อ *</label>
+                                        <input
+                                            className="input-field"
+                                            value={form.name}
+                                            onChange={e => setForm({...form, name: e.target.value})}
+                                            placeholder="ชื่อหัวบ้าน"
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label><i className="fa-solid fa-phone"></i> เบอร์โทร</label>
+                                        <input
+                                            className="input-field"
+                                            value={form.phone}
+                                            onChange={e => setForm({...form, phone: e.target.value})}
+                                            placeholder="เบอร์ติดต่อ"
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label><i className="fa-solid fa-store"></i> ร้านค้า</label>
+                                        <input
+                                            className="input-field"
+                                            value={form.storeName}
+                                            onChange={e => setForm({...form, storeName: e.target.value})}
+                                            disabled={!isAdmin}
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label><i className="fa-solid fa-circle"></i> สถานะ</label>
+                                        <select
+                                            className="input-field"
+                                            value={form.status}
+                                            onChange={e => setForm({...form, status: e.target.value})}
+                                        >
+                                            <option value="active">🟢 ใช้งาน</option>
+                                            <option value="inactive">🟡 ไม่ใช้งาน</option>
+                                        </select>
+                                    </div>
+                                    <div className="input-group">
+                                        <label><i className="fa-solid fa-note-sticky"></i> หมายเหตุ</label>
+                                        <input
+                                            className="input-field"
+                                            value={form.notes}
+                                            onChange={e => setForm({...form, notes: e.target.value})}
+                                            placeholder="หมายเหตุเพิ่มเติม"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="modal-actions">
+                                    <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
+                                        <i className="fa-solid fa-xmark"></i> ยกเลิก
+                                    </button>
+                                    <button className="btn btn-primary" onClick={handleSubmit}>
+                                        <i className={`fa-solid ${editingHead ? 'check' : 'plus'}`}></i>
+                                        {editingHead ? 'บันทึก' : 'เพิ่ม'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Modal เลือกลูกค้าเข้ากลุ่ม */}
+                    {showAssignModal && selectedHead && (
+                        <div className="modal-overlay" onClick={() => setShowAssignModal(false)}>
+                            <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '700px' }}>
+                                <h2>
+                                    <i className="fa-solid fa-user-plus"></i>
+                                    เพิ่มสมาชิกให้ {selectedHead.name}
+                                </h2>
+                                <p style={{ color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                                    <i className="fa-solid fa-info-circle"></i> สมาชิกปัจจุบัน: {selectedHead.memberCount}/5 คน
+                                </p>
+
+                                <div className="search-box" style={{ marginBottom: '16px' }}>
+                                    <i className="fa-solid fa-magnifying-glass search-icon"></i>
+                                    <input
+                                        className="input-field"
+                                        placeholder="ค้นหาลูกค้า..."
+                                        value={searchCustomer}
+                                        onChange={e => setSearchCustomer(e.target.value)}
+                                    />
+                                </div>
+
+                                <div className="table-wrapper" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>อีเมล</th>
+                                                <th>ชื่อบัญชี</th>
+                                                <th>แพ็คเกจ</th>
+                                                <th>จัดการ</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {filteredAvailableCustomers.length > 0 ? filteredAvailableCustomers.map((c, i) => (
+                                                <tr key={i}>
+                                                    <td>{c.email}</td>
+                                                    <td><strong>{c.accountName}</strong></td>
+                                                    <td><span className="badge badge-info">{c.package}</span></td>
+                                                    <td>
+                                                        <button
+                                                            className="btn btn-primary btn-sm"
+                                                            onClick={() => handleAssignCustomer(c.id)}
+                                                        >
+                                                            <i className="fa-solid fa-plus"></i> เพิ่ม
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            )) : (
+                                                <tr><td colSpan="4" className="empty-state">
+                                                    <i className="fa-solid fa-inbox"></i>
+                                                    <p>ไม่มีลูกค้าที่พร้อมเพิ่ม</p>
+                                                </td></tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div className="modal-actions">
+                                    <button className="btn btn-secondary" onClick={() => setShowAssignModal(false)}>
+                                        <i className="fa-solid fa-xmark"></i> ปิด
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
         // ==================== CHECK PAGE ====================
         const CheckPage = () => {
             const { customers, user } = useApp();
@@ -2558,14 +2953,9 @@
             const [searching, setSearching] = useState(false);
 
             const handleSearch = () => {
-                if (!searchEmail.trim()) {
-                    return;
-                }
-
+                if (!searchEmail.trim()) return;
                 setSearching(true);
                 setSearched(false);
-
-                // จำลองการค้นหา (ใช้ข้อมูลที่มีอยู่แล้ว)
                 setTimeout(() => {
                     const filtered = isAdmin ? customers : customers.filter(c => c.storeName === user?.storeName);
                     const found = filtered.find(c =>
@@ -2620,7 +3010,6 @@
                                 </>
                             )}
                         </button>
-
                         {searched && (
                             <div style={{ marginTop: 'clamp(20px, 3vw, 28px)' }}>
                                 {result ? (
@@ -2648,6 +3037,12 @@
                                                         <i className="fa-solid fa-box"></i> แพ็คเกจ
                                                     </td>
                                                     <td><span className="badge badge-info">{result.package}</span></td>
+                                                </tr>
+                                                <tr>
+                                                    <td style={{ fontWeight: 600, padding: 'clamp(8px, 1.5vw, 10px) 0', color: 'var(--text-secondary)', fontSize: 'clamp(12px, 1.8vw, 14px)' }}>
+                                                        <i className="fa-solid fa-house"></i> หัวบ้าน
+                                                    </td>
+                                                    <td style={{ fontSize: 'clamp(12px, 1.8vw, 14px)' }}>{result.houseHead || <span style={{ color: 'var(--text-tertiary)' }}>-</span>}</td>
                                                 </tr>
                                                 <tr>
                                                     <td style={{ fontWeight: 600, padding: 'clamp(8px, 1.5vw, 10px) 0', color: 'var(--text-secondary)', fontSize: 'clamp(12px, 1.8vw, 14px)' }}>
@@ -2685,12 +3080,6 @@
                                                         <i className="fa-solid fa-store"></i> ร้านค้า
                                                     </td>
                                                     <td><span className="badge" style={{ background: 'var(--hover-bg)' }}>{result.storeName}</span></td>
-                                                </tr>
-                                                <tr>
-                                                    <td style={{ fontWeight: 600, padding: 'clamp(8px, 1.5vw, 10px) 0', color: 'var(--text-secondary)', fontSize: 'clamp(12px, 1.8vw, 14px)' }}>
-                                                        <i className="fa-solid fa-house"></i> หัวบ้าน
-                                                    </td>
-                                                    <td style={{ fontSize: 'clamp(12px, 1.8vw, 14px)' }}>{result.houseHead || <span style={{ color: 'var(--text-tertiary)' }}>-</span>}</td>
                                                 </tr>
                                             </tbody>
                                         </table>
@@ -3005,6 +3394,7 @@
                 switch (currentPage) {
                     case 'dashboard': return <Dashboard />;
                     case 'customers': return <CustomersPage />;
+                    case 'househeads': return <HouseHeadsPage />;
                     case 'check': return <CheckPage />;
                     case 'profile': return <ProfilePage />;
                     case 'users': return user.rank === 1 ? <UsersPage /> : <Dashboard />;
