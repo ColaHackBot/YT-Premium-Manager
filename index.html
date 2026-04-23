@@ -13,7 +13,7 @@
 
     <!-- Fonts & Icons -->
     <link
-        href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&amp;family=Rajdhani:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
@@ -136,6 +136,31 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+        }
+
+        /* Global Loading Bar */
+        .global-loading-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg,
+                    transparent 0%,
+                    var(--accent) 50%,
+                    transparent 100%);
+            z-index: 9999;
+            animation: loadingSlide 1.5s ease-in-out infinite;
+        }
+
+        @keyframes loadingSlide {
+            0% {
+                transform: translateX(-100%);
+            }
+
+            100% {
+                transform: translateX(100%);
+            }
         }
 
         /* Layout */
@@ -1502,16 +1527,19 @@
                                 } else {
                                     setInitError('Cannot load LINE profile');
                                 }
+                            } else {
+                                // User not logged in, stop loading
+                                setLoading(false);
                             }
                         } else {
                             setInitError('LIFF initialization failed');
+                            setLoading(false);
                         }
                     } catch (error) {
                         addDebugLog(`Init error: ${error.message}`, 'error');
                         setInitError(error.message);
+                        setLoading(false);
                     }
-                    setLoading(false);
-                    addDebugLog('=== App Initialization Completed ===', 'info');
                 };
                 initApp();
             }, []);
@@ -1573,13 +1601,59 @@
                             rank: parseInt(data.user.rank) || 0
                         };
                         setUser(userData);
-                        showToast(`ยินดีต้อนรับ ${data.user.lineName || profile.displayName}`, 'success');
+                        addDebugLog(`User logged in: ${userData.lineName}`, 'success');
+                        // ✅ โหลดข้อมูลทันทีหลังจาก login สำเร็จ
+                        await loadInitialData(userData);
+                        setLoading(false);
                     } else {
                         throw new Error(data.message || 'Login failed');
                     }
                 } catch (error) {
                     addDebugLog(`Login/Register failed: ${error.message}`, 'error');
                     showToast('เกิดข้อผิดพลาดในการเข้าสู่ระบบ: ' + error.message, 'danger');
+                    setLoading(false);
+                }
+            };
+
+            // ✅ ฟังก์ชันโหลดข้อมูลทั้งหมดครั้งเดียว
+            const loadInitialData = async (currentUser) => {
+                addDebugLog('=== Loading all initial data ===', 'info');
+                try {
+                    // โหลด Customers
+                    const customersPayload = encodeURIComponent(JSON.stringify({
+                        action: 'getCustomers',
+                        userId: currentUser.id || currentUser.userId,
+                        userRank: currentUser.rank || 0,
+                        storeName: currentUser.storeName || 'My Shop'
+                    }));
+                    const customersUrl = `${APPS_SCRIPT_URL}?payload=${customersPayload}`;
+                    const customersResponse = await fetch(customersUrl, { method: 'GET' });
+                    const customersData = await customersResponse.json();
+                    if (customersData.success) {
+                        setCustomers(customersData.customers || []);
+                        addDebugLog(`Loaded ${customersData.customers?.length || 0} customers`, 'success');
+                    }
+
+                    // โหลด Users (เฉพาะ Admin)
+                    if (currentUser.rank === 1) {
+                        const usersPayload = encodeURIComponent(JSON.stringify({
+                            action: 'getUsers',
+                            userId: currentUser.id || currentUser.userId,
+                            userRank: currentUser.rank || 0,
+                            storeName: currentUser.storeName || 'My Shop'
+                        }));
+                        const usersUrl = `${APPS_SCRIPT_URL}?payload=${usersPayload}`;
+                        const usersResponse = await fetch(usersUrl, { method: 'GET' });
+                        const usersData = await usersResponse.json();
+                        if (usersData.success) {
+                            setUsers(usersData.users || []);
+                            addDebugLog(`Loaded ${usersData.users?.length || 0} users`, 'success');
+                        }
+                    }
+
+                    addDebugLog('=== All initial data loaded ===', 'success');
+                } catch (error) {
+                    addDebugLog(`Failed to load initial data: ${error.message}`, 'error');
                 }
             };
 
@@ -1588,8 +1662,10 @@
                     showToast('ระบบ LIFF ยังไม่พร้อมใช้งาน', 'danger');
                     return;
                 }
+                setLoading(true);
                 const profile = await LineLoginService.login();
                 if (profile) await registerOrLoginUser(profile);
+                else setLoading(false);
             };
 
             const logout = () => {
@@ -1601,16 +1677,16 @@
                 showToast('ออกจากระบบแล้ว');
             };
 
+            // ✅ ฟังก์ชัน refresh ข้อมูล (ใช้เมื่อมีการเพิ่ม/แก้ไข/ลบ)
             const fetchCustomers = useCallback(async () => {
                 if (!user) return;
-                setLoading(true);
                 try {
                     const data = await callAPI('getCustomers');
                     setCustomers(data.customers || []);
+                    addDebugLog(`Refreshed ${data.customers?.length || 0} customers`, 'info');
                 } catch (e) {
-                    addDebugLog(`Failed to fetch customers: ${e.message}`, 'error');
+                    addDebugLog(`Failed to refresh customers: ${e.message}`, 'error');
                 }
-                setLoading(false);
             }, [user, callAPI]);
 
             const fetchUsers = useCallback(async () => {
@@ -1618,17 +1694,11 @@
                 try {
                     const data = await callAPI('getUsers');
                     setUsers(data.users || []);
+                    addDebugLog(`Refreshed ${data.users?.length || 0} users`, 'info');
                 } catch (e) {
-                    addDebugLog(`Failed to fetch users: ${e.message}`, 'error');
+                    addDebugLog(`Failed to refresh users: ${e.message}`, 'error');
                 }
             }, [user, callAPI]);
-
-            useEffect(() => {
-                if (user) {
-                    fetchCustomers();
-                    if (user.rank === 1) fetchUsers();
-                }
-            }, [user, fetchCustomers, fetchUsers]);
 
             const value = {
                 user, setUser,
@@ -1694,9 +1764,16 @@
             return (
                 <div className="login-container">
                     <div className="login-card glass-card">
+                        <div className="logo"><i className="fa-brands fa-youtube"></i></div>
+                        <h1>YT Premium Manager</h1>
                         <div className="loading-spinner">
                             <div className="spinner"></div>
-                            <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(14px, 2vw, 16px)' }}>กำลังโหลดระบบ...</p>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(14px, 2vw, 16px)' }}>
+                                กำลังโหลดข้อมูลทั้งหมด...
+                            </p>
+                            <p style={{ color: 'var(--text-tertiary)', fontSize: 'clamp(11px, 1.5vw, 12px)' }}>
+                                <i className="fa-solid fa-spinner fa-pulse"></i> กรุณารอสักครู่ ระบบกำลังดึงข้อมูลจากฐานข้อมูล
+                            </p>
                         </div>
                         {initError ? (
                             <div style={{ marginTop: 'clamp(16px, 3vw, 24px)', padding: 'clamp(12px, 2vw, 20px)', background: 'rgba(255,71,87,0.1)', borderRadius: '16px', border: '1px solid var(--danger)' }}>
@@ -1710,7 +1787,7 @@
                             </div>
                         ) : (
                             <p style={{ marginTop: '16px', fontSize: 'clamp(12px, 1.6vw, 13px)', color: 'var(--text-tertiary)' }}>
-                                <i className="fa-solid fa-spinner fa-pulse"></i> กำลังเชื่อมต่อกับ LINE และระบบฐานข้อมูล...
+                                <i className="fa-solid fa-database"></i> กำลังเชื่อมต่อกับฐานข้อมูล...
                             </p>
                         )}
                     </div>
@@ -2010,6 +2087,7 @@
                                                         <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--active-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>
                                                             {c.email?.charAt(0).toUpperCase() || '?'}
                                                         </div>
+                                                        {c.email}
                                                     </div>
                                                 </td>
                                                 <td><strong>{c.accountName}</strong></td>
@@ -2144,6 +2222,7 @@
                                                         <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--active-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 600 }}>
                                                             {c.email?.charAt(0).toUpperCase() || '?'}
                                                         </div>
+                                                        {c.email}
                                                     </div>
                                                 </td>
                                                 <td><strong>{c.accountName}</strong></td>
@@ -2574,8 +2653,14 @@
                     </div>
 
                     <div className="glass-card">
-                        {loading ? (
-                            <div className="loading-spinner"><div className="spinner"></div><p>กำลังโหลดข้อมูล...</p></div>
+                        {loading && familyHeads.length === 0 ? (
+                            <div className="loading-spinner"><div className="spinner"></div><p>กำลังโหลดข้อมูลหัวบ้าน...</p></div>
+                        ) : familyHeads.length === 0 ? (
+                            <div className="empty-state">
+                                <i className="fa-solid fa-house-circle-exclamation"></i>
+                                <p>ไม่มีข้อมูลหัวบ้าน</p>
+                                <p style={{ fontSize: '13px' }}>คลิก "เพิ่มหัวบ้าน" เพื่อเริ่มต้น</p>
+                            </div>
                         ) : (
                             <div className="table-wrapper">
                                 <table>
@@ -2585,7 +2670,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {familyHeads.length > 0 ? familyHeads.map((head, i) => (
+                                        {familyHeads.map((head, i) => (
                                             <tr key={i}>
                                                 <td>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -2620,9 +2705,7 @@
                                                     </div>
                                                 </td>
                                             </tr>
-                                        )) : (
-                                            <tr><td colSpan="6" className="empty-state"><i className="fa-solid fa-house-circle-exclamation"></i><p>ไม่มีข้อมูลหัวบ้าน</p><p style={{ fontSize: '13px' }}>คลิก "เพิ่มหัวบ้าน" เพื่อเริ่มต้น</p></td></tr>
-                                        )}
+                                        ))}
                                     </tbody>
                                 </table>
                             </div>
@@ -2811,6 +2894,9 @@
 
             return (
                 <div data-theme={theme}>
+                    {/* ✅ Global Loading Bar */}
+                    {loading && <div className="global-loading-bar"></div>}
+
                     <div className="app-container">
                         {sidebarOpen && (
                             <div onClick={() => setSidebarOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 99 }} />
