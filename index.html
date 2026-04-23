@@ -1362,7 +1362,7 @@
 
         // ==================== CONFIG ====================
         // 🔧 เปลี่ยน URL นี้เป็นของ Google Apps Script ของคุณ
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx5iVZAOy-bO_c5vpLBXlcH0UitCuoRMu662reiE1gMLSOklj_7uQoAnH9bpYRP5QzQ/exec';
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxY-GOQr0oSkZDassnGJmYP51qo45G4om-x7W8mEXNh7foz-ey_PPzGBSs-fD4EYEbN/exec';
 
         // 🔧 เปลี่ยนเป็น LIFF ID ของคุณจาก LINE Developers Console
         const LIFF_ID = '2009880685-UCuYnwIF';
@@ -2432,7 +2432,7 @@
                                             value={form.package}
                                             onChange={e => setForm({ ...form, package: e.target.value })}
                                         >
-                                            {['1 เดือน','2 เดือน','3 เดือน','4 เดือน','5 เดือน','6 เดือน','7 เดือน','8 เดือน','9 เดือน','10 เดือน','11 เดือน','12 เดือน'].map(m => (
+                                            {['1 เดือน', '2 เดือน', '3 เดือน', '4 เดือน', '5 เดือน', '6 เดือน', '7 เดือน', '8 เดือน', '9 เดือน', '10 เดือน', '11 เดือน', '12 เดือน'].map(m => (
                                                 <option key={m} value={m}>{m}</option>
                                             ))}
                                         </select>
@@ -2531,7 +2531,7 @@
             const fetchCustomers = async () => {
                 try {
                     const data = await callAPI('getCustomers');
-                    const available = (data.customers || []).filter(c => 
+                    const available = (data.customers || []).filter(c =>
                         !c.houseHead || c.houseHead === '' || c.houseHead === 'undefined'
                     );
                     setCustomers(available);
@@ -2638,8 +2638,8 @@
             };
 
             const filteredAvailableCustomers = customers.filter(c =>
-                (c.email?.toLowerCase().includes(searchCustomer.toLowerCase()) ||
-                 c.accountName?.toLowerCase().includes(searchCustomer.toLowerCase()))
+            (c.email?.toLowerCase().includes(searchCustomer.toLowerCase()) ||
+                c.accountName?.toLowerCase().includes(searchCustomer.toLowerCase()))
             );
 
             if (loading) {
@@ -2714,11 +2714,11 @@
                                                         {head.members && head.members.length > 0 && (
                                                             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                                                                 {head.members.map((m, mi) => (
-                                                                    <span key={mi} 
-                                                                        className="badge" 
-                                                                        style={{ 
-                                                                            background: 'var(--active-bg)', 
-                                                                            fontSize: '9px', 
+                                                                    <span key={mi}
+                                                                        className="badge"
+                                                                        style={{
+                                                                            background: 'var(--active-bg)',
+                                                                            fontSize: '9px',
                                                                             padding: '2px 6px',
                                                                             display: 'flex',
                                                                             alignItems: 'center',
@@ -2727,10 +2727,10 @@
                                                                         title={m.email}
                                                                     >
                                                                         {m.accountName || m.email}
-                                                                        <i 
-                                                                            className="fa-solid fa-xmark" 
-                                                                            style={{ 
-                                                                                cursor: 'pointer', 
+                                                                        <i
+                                                                            className="fa-solid fa-xmark"
+                                                                            style={{
+                                                                                cursor: 'pointer',
                                                                                 fontSize: '8px',
                                                                                 color: 'var(--danger)'
                                                                             }}
@@ -2809,7 +2809,7 @@
                                             className="input-field"
                                             type="email"
                                             value={form.email}
-                                            onChange={e => setForm({...form, email: e.target.value})}
+                                            onChange={e => setForm({ ...form, email: e.target.value })}
                                             placeholder="email@example.com"
                                             disabled={!!editingHead}
                                         />
@@ -2819,7 +2819,7 @@
                                         <input
                                             className="input-field"
                                             value={form.name}
-                                            onChange={e => setForm({...form, name: e.target.value})}
+                                            onChange={e => setForm({ ...form, name: e.target.value })}
                                             placeholder="ชื่อหัวบ้าน"
                                         />
                                     </div>
@@ -2828,7 +2828,7 @@
                                         <input
                                             className="input-field"
                                             value={form.phone}
-                                            onChange={e => setForm({...form, phone: e.target.value})}
+                                            onChange={e => setForm({ ...form, phone: e.target.value })}
                                             placeholder="เบอร์ติดต่อ"
                                         />
                                     </div>
@@ -2837,7 +2837,7 @@
                                         <input
                                             className="input-field"
                                             value={form.storeName}
-                                            onChange={e => setForm({...form, storeName: e.target.value})}
+                                            onChange={e => setForm({ ...form, storeName: e.target.value })}
                                             disabled={!isAdmin}
                                         />
                                     </div>
@@ -2846,7 +2846,7 @@
                                         <select
                                             className="input-field"
                                             value={form.status}
-                                            onChange={e => setForm({...form, status: e.target.value})}
+                                            onChange={e => setForm({ ...form, status: e.target.value })}
                                         >
                                             <option value="active">🟢 ใช้งาน</option>
                                             <option value="inactive">🟡 ไม่ใช้งาน</option>
@@ -2857,7 +2857,7 @@
                                         <input
                                             className="input-field"
                                             value={form.notes}
-                                            onChange={e => setForm({...form, notes: e.target.value})}
+                                            onChange={e => setForm({ ...form, notes: e.target.value })}
                                             placeholder="หมายเหตุเพิ่มเติม"
                                         />
                                     </div>
