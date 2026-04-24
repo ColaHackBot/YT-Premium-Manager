@@ -1405,7 +1405,7 @@
         // ==================== CONFIG ====================
         // 🔧 เปลี่ยน URL นี้เป็นของ Google Apps Script ของคุณ
         const APPS_SCRIPT_URL =
-            'https://script.google.com/macros/s/AKfycbwbPd7OkAaOQ8OPL68nuJzyQ6wx84tOCPOpMaebzaeZYY_PvA95gze9IW6DBa51Ek5G/exec';
+            'https://script.google.com/macros/s/AKfycbxSpUf1yXCAyeluXYmP0_T9jHV_RJYm6WljCVzm0a0SuVMgIhxQwchyhTmuS5ztc3xK/exec';
 
         // 🔧 เปลี่ยนเป็น LIFF ID ของคุณจาก LINE Developers Console
         const LIFF_ID = '2009880685-UCuYnwIF';
@@ -1503,8 +1503,7 @@
                 try {
                     addDebugLog('Getting LINE profile...', 'info');
                     const profile = await liff.getProfile();
-                    addDebugLog(`Profile received: userId=${profile.userId}, name=${profile.displayName}`,
-                        'success');
+                    addDebugLog(`Profile received: userId=${profile.userId}, name=${profile.displayName}`, 'success');
                     const idToken = liff.getIDToken();
                     addDebugLog(`ID Token: ${idToken ? idToken.substring(0, 50) + '...' : 'null'}`, 'info');
                     return {
@@ -1670,8 +1669,7 @@
                         setCustomers(customersData.customers || []);
                         addDebugLog(`Loaded ${customersData.customers?.length || 0} customers`, 'success');
                     } else {
-                        addDebugLog('Failed to load customers: ' + (customersData.message || 'Unknown error'),
-                            'warning');
+                        addDebugLog('Failed to load customers: ' + (customersData.message || 'Unknown error'), 'warning');
                     }
 
                     // Load Users (Admin only)
@@ -1689,8 +1687,7 @@
                             setUsers(usersData.users || []);
                             addDebugLog(`Loaded ${usersData.users?.length || 0} users`, 'success');
                         } else {
-                            addDebugLog('Failed to load users: ' + (usersData.message || 'Unknown error'),
-                                'warning');
+                            addDebugLog('Failed to load users: ' + (usersData.message || 'Unknown error'), 'warning');
                         }
                     }
 
@@ -2010,7 +2007,7 @@
                                         alt={user?.lineName || 'User'}
                                         onError={(e) => {
                                             e.target.style.display = 'none';
-                                            e.target.nextElementSibling.style.display = 'flex';
+                                            e.target.parentElement.querySelector('i').style.display = 'flex';
                                         }}
                                     />
                                 ) : null}
@@ -2053,7 +2050,8 @@
                 { id: 'check', label: 'ค้นหา', icon: 'fa-magnifying-glass' },
                 ...(isAdmin ? [{ id: 'users', label: 'ผู้ใช้', icon: 'fa-user-shield' }] : [{
                     id: 'profile',
-                    label: 'โปรไฟล์', icon: 'fa-user'
+                    label: 'โปรไฟล์',
+                    icon: 'fa-user'
                 }]),
             ];
 
@@ -2405,7 +2403,7 @@
             );
         };
 
-        // ==================== CUSTOMERS PAGE ====================
+        // ==================== CUSTOMERS PAGE (UPDATED WITH AUTO EXPIRY CALCULATION) ====================
         const CustomersPage = () => {
             const { customers, user, callAPI, fetchCustomers, showToast } = useApp();
             const isAdmin = user?.rank === 1;
@@ -2424,30 +2422,60 @@
                 status: 'active',
             });
 
-            const filteredCustomers = (isAdmin ?
-                customers :
-                customers.filter(c => c.storeName === user?.storeName)
-            )
-                .filter(c =>
-                    (c.email || '').toLowerCase().includes((search || '').toLowerCase()) ||
-                    (c.accountName || '').toLowerCase().includes((search || '').toLowerCase()) ||
-                    (c.storeName || '').toLowerCase().includes((search || '').toLowerCase()) ||
-                    (c.houseHead || '').toLowerCase().includes((search || '').toLowerCase())
-                )
-                .sort((a, b) => new Date(b.createdAt || b.purchaseDate || 0) - new Date(a.createdAt || a.purchaseDate ||
-                    0));
+            // --- ฟังก์ชันช่วยคำนวณวันที่ ---
+            const getTodayDateString = () => {
+                const d = new Date();  // local time ของผู้ใช้ (ควรเป็นประเทศไทย)
+                const yyyy = d.getFullYear();
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                return `${yyyy}-${mm}-${dd}`;
+            };
 
+            const calculateExpiry = (purchaseDate, packageStr) => {
+                if (!purchaseDate) return '';
+                const monthsMatch = packageStr && packageStr.match(/(\d+)\s*เดือน/);
+                if (!monthsMatch) return '';
+                const months = parseInt(monthsMatch[1]);
+                // สร้าง Date จาก local time (ใช้วันที่ที่รับเข้ามา ตีความเป็นเวลาเที่ยงคืน)
+                const d = new Date(purchaseDate + 'T00:00:00');
+                d.setMonth(d.getMonth() + months);
+                const yyyy = d.getFullYear();
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                return `${yyyy}-${mm}-${dd}`;
+            };
+
+            // ปรับค่าเมื่อเปลี่ยนแพ็กเกจ
+            const handlePackageChange = (value) => {
+                setForm(prev => ({
+                    ...prev,
+                    package: value,
+                    expiryDate: calculateExpiry(prev.purchaseDate, value)
+                }));
+            };
+
+            // ปรับค่าเมื่อเปลี่ยนวันที่ซื้อ
+            const handlePurchaseDateChange = (value) => {
+                setForm(prev => ({
+                    ...prev,
+                    purchaseDate: value,
+                    expiryDate: calculateExpiry(value, prev.package)
+                }));
+            };
+
+            // รีเซ็ตฟอร์มสำหรับเพิ่มลูกค้าใหม่
             const resetForm = () => {
                 setEditingCustomer(null);
+                const today = getTodayDateString();
                 setForm({
                     email: '',
                     accountName: '',
                     package: '1 เดือน',
                     storeName: user?.storeName || '',
                     houseHead: '',
-                    purchaseDate: '',
-                    expiryDate: '',
-                    notificationEmail: '',
+                    purchaseDate: today,                        // ตั้งเป็นวันนี้
+                    expiryDate: calculateExpiry(today, '1 เดือน'), // คำนวณ 1 เดือนจากวันนี้
+                    notificationEmail: 'sampan082@gmail.com',
                     status: 'active',
                 });
             };
@@ -2464,14 +2492,15 @@
                     if (!dateStr) return '';
                     return dateStr.split(' ')[0] || '';
                 };
+                const pDate = extractDate(customer.purchaseDate);
                 setForm({
                     email: customer.email || '',
                     accountName: customer.accountName || '',
                     package: customer.package || '1 เดือน',
                     storeName: customer.storeName || '',
                     houseHead: customer.houseHead || '',
-                    purchaseDate: extractDate(customer.purchaseDate),
-                    expiryDate: extractDate(customer.expiryDate),
+                    purchaseDate: pDate,
+                    expiryDate: calculateExpiry(pDate, customer.package || '1 เดือน'), // คำนวณใหม่
                     notificationEmail: customer.notificationEmail || '',
                     status: customer.status || 'active',
                 });
@@ -2543,6 +2572,19 @@
                 '1 เดือน', '2 เดือน', '3 เดือน', '4 เดือน', '5 เดือน', '6 เดือน',
                 '7 เดือน', '8 เดือน', '9 เดือน', '10 เดือน', '11 เดือน', '12 เดือน'
             ];
+
+            const filteredCustomers = (isAdmin ?
+                customers :
+                customers.filter(c => c.storeName === user?.storeName)
+            )
+                .filter(c =>
+                    (c.email || '').toLowerCase().includes((search || '').toLowerCase()) ||
+                    (c.accountName || '').toLowerCase().includes((search || '').toLowerCase()) ||
+                    (c.storeName || '').toLowerCase().includes((search || '').toLowerCase()) ||
+                    (c.houseHead || '').toLowerCase().includes((search || '').toLowerCase())
+                )
+                .sort((a, b) => new Date(b.createdAt || b.purchaseDate || 0) - new Date(a.createdAt || a.purchaseDate ||
+                    0));
 
             return (
                 <div>
@@ -2703,7 +2745,7 @@
                                         <select
                                             className="input-field"
                                             value={form.package}
-                                            onChange={e => setForm({ ...form, package: e.target.value })}
+                                            onChange={e => handlePackageChange(e.target.value)}
                                         >
                                             {packageOptions.map(m => (
                                                 <option key={m} value={m}>{m}</option>
@@ -2734,7 +2776,7 @@
                                             className="input-field"
                                             type="date"
                                             value={form.purchaseDate}
-                                            onChange={e => setForm({ ...form, purchaseDate: e.target.value })}
+                                            onChange={e => handlePurchaseDateChange(e.target.value)}
                                         />
                                     </div>
                                     <div className="input-group">
@@ -3004,93 +3046,93 @@
                     </div>
 
                     <div className="glass-card" style={{ maxWidth: '540px' }}>
-                        <div style={{ 'text- align': 'center', marginBottom: '2rem' }}>
-                        <div className="user-avatar" style={{
-                            width: '5.5rem',
-                            height: '5.5rem',
-                            margin: '0 auto 1.25rem',
-                            fontSize: '2rem',
-                            borderWidth: '3px',
-                            borderColor: 'var(--accent)',
-                            boxShadow: '0 0 30px var(--accent-light)',
-                        }}>
-                            {user?.pictureUrl ? (
-                                <img
-                                    src={user.pictureUrl}
-                                    alt={user?.lineName || 'User'}
-                                    onError={(e) => {
-                                        e.target.style.display = 'none';
-                                        e.target.nextElementSibling.style.display = 'flex';
+                        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                            <div className="user-avatar" style={{
+                                width: '5.5rem',
+                                height: '5.5rem',
+                                margin: '0 auto 1.25rem',
+                                fontSize: '2rem',
+                                borderWidth: '3px',
+                                borderColor: 'var(--accent)',
+                                boxShadow: '0 0 30px var(--accent-light)',
+                            }}>
+                                {user?.pictureUrl ? (
+                                    <img
+                                        src={user.pictureUrl}
+                                        alt={user?.lineName || 'User'}
+                                        onError={(e) => {
+                                            e.target.style.display = 'none';
+                                            e.target.parentElement.querySelector('i').style.display = 'flex';
+                                        }}
+                                    />
+                                ) : null}
+                                <i
+                                    className="fa-solid fa-user"
+                                    style={{
+                                        display: user?.pictureUrl ? 'none' : 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        width: '100%',
+                                        height: '100%',
                                     }}
-                                />
-                            ) : null}
-                            <i
-                                className="fa-solid fa-user"
-                                style={{
-                                    display: user?.pictureUrl ? 'none' : 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    width: '100%',
-                                    height: '100%',
-                                }}
-                            ></i>
+                                ></i>
+                            </div>
+                            <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{user?.lineName || 'ผู้ใช้งาน'}</h2>
+                            <div style={{ marginTop: '0.5rem' }}>
+                                {user?.rank === 1 ? (
+                                    <span className="badge badge-danger">
+                                        <i className="fa-solid fa-crown"></i> แอดมิน
+                                    </span>
+                                ) : (
+                                    <span className="badge badge-info">
+                                        <i className="fa-solid fa-user"></i> สมาชิก
+                                    </span>
+                                )}
+                            </div>
                         </div>
-                        <h2 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{user?.lineName || 'ผู้ใช้งาน'}</h2>
-                        <div style={{ marginTop: '0.5rem' }}>
-                            {user?.rank === 1 ? (
-                                <span className="badge badge-danger">
-                                    <i className="fa-solid fa-crown"></i> แอดมิน
-                                </span>
-                            ) : (
-                                <span className="badge badge-info">
-                                    <i className="fa-solid fa-user"></i> สมาชิก
-                                </span>
-                            )}
+
+                        <div className="neo-card" style={{ marginBottom: '1rem' }}>
+                            <table style={{ width: '100%' }}>
+                                <tbody>
+                                    <tr>
+                                        <td style={{ fontWeight: 600, color: 'var(--text-secondary)', padding: '0.625rem 0', width: '130px', fontSize: '0.8125rem' }}>ชื่อไลน์</td>
+                                        <td className="font-semibold">{user?.lineName || '-'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style={{ fontWeight: 600, color: 'var(--text-secondary)', padding: '0.625rem 0', fontSize: '0.8125rem' }}>ร้านค้า</td>
+                                        <td><span className="badge badge-neutral">{user?.storeName || '-'}</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td style={{ fontWeight: 600, color: 'var(--text-secondary)', padding: '0.625rem 0', fontSize: '0.8125rem' }}>LINE User ID</td>
+                                        <td className="font-mono text-sm text-muted">{user?.userId || user?.id || '-'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style={{ fontWeight: 600, color: 'var(--text-secondary)', padding: '0.625rem 0', fontSize: '0.8125rem' }}>วันที่สมัคร</td>
+                                        <td className="text-sm">
+                                            {user?.createdAt ?
+                                                new Date(user.createdAt).toLocaleDateString('th-TH', {
+                                                    year: 'numeric',
+                                                    month: 'long',
+                                                    day: 'numeric',
+                                                }) :
+                                                '-'}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
-                    </div>
 
-                    <div className="neo-card" style={{ marginBottom: '1rem' }}>
-                        <table style={{ width: '100%' }}>
-                            <tbody>
-                                <tr>
-                                    <td style={{ fontWeight: 600, color: 'var(--text-secondary)', padding: '0.625rem 0', width: '130px', fontSize: '0.8125rem' }}>ชื่อไลน์</td>
-                                    <td className="font-semibold">{user?.lineName || '-'}</td>
-                                </tr>
-                                <tr>
-                                    <td style={{ fontWeight: 600, color: 'var(--text-secondary)', padding: '0.625rem 0', fontSize: '0.8125rem' }}>ร้านค้า</td>
-                                    <td><span className="badge badge-neutral">{user?.storeName || '-'}</span></td>
-                                </tr>
-                                <tr>
-                                    <td style={{ fontWeight: 600, color: 'var(--text-secondary)', padding: '0.625rem 0', fontSize: '0.8125rem' }}>LINE User ID</td>
-                                    <td className="font-mono text-sm text-muted">{user?.userId || user?.id || '-'}</td>
-                                </tr>
-                                <tr>
-                                    <td style={{ fontWeight: 600, color: 'var(--text-secondary)', padding: '0.625rem 0', fontSize: '0.8125rem' }}>วันที่สมัคร</td>
-                                    <td className="text-sm">
-                                        {user?.createdAt ?
-                                            new Date(user.createdAt).toLocaleDateString('th-TH', {
-                                                year: 'numeric',
-                                                month: 'long',
-                                                day: 'numeric',
-                                            }) :
-                                            '-'}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div style={{ textAlign: 'center', paddingTop: '1.25rem', borderTop: '1px solid var(--border-color)' }}>
-                        <button
-                            className="btn btn-danger"
-                            onClick={logout}
-                            style={{ borderRadius: 'var(--radius-full)', padding: '0.75rem 2rem' }}
-                        >
-                            <i className="fa-solid fa-right-from-bracket"></i> ออกจากระบบ
-                        </button>
+                        <div style={{ textAlign: 'center', paddingTop: '1.25rem', borderTop: '1px solid var(--border-color)' }}>
+                            <button
+                                className="btn btn-danger"
+                                onClick={logout}
+                                style={{ borderRadius: 'var(--radius-full)', padding: '0.75rem 2rem' }}
+                            >
+                                <i className="fa-solid fa-right-from-bracket"></i> ออกจากระบบ
+                            </button>
+                        </div>
                     </div>
                 </div>
-                </div >
             );
         };
 
