@@ -45,64 +45,38 @@
             --radius-full: 9999px;
         }
 
-        /* Dark Theme (Minimal Black/White/Gray) */
+        /* Dark Theme */
         [data-theme="dark"] {
             --bg-primary: #09090b;
-            /* Zinc 950 - darkest */
             --bg-secondary: #18181b;
-            /* Zinc 900 */
             --bg-tertiary: #27272a;
-            /* Zinc 800 */
             --bg-card: #18181b;
-
             --text-primary: #fafafa;
-            /* Zinc 50 - brightest */
             --text-secondary: #a1a1aa;
-            /* Zinc 400 */
             --text-tertiary: #71717a;
-            /* Zinc 500 */
-
             --border-color: rgba(161, 161, 170, 0.1);
-            /* Zinc 400 @ 10% */
             --border-accent: rgba(250, 250, 250, 0.15);
-            /* Zinc 50 @ 15% */
-
-            /* Accent - ใช้สีขาว/เทาอ่อน แทนสีแดง */
             --accent: #ef4444;
-            /* Zinc 50 */
             --accent-hover: #e4e4e7;
-            /* Zinc 200 */
             --accent-light: rgba(250, 250, 250, 0.08);
             --accent-glow: rgba(250, 250, 250, 0.1);
-
-            /* Danger - เก็บสีแดงไว้สำหรับ action ลบ/อันตราย */
             --danger: #ef4444;
             --danger-hover: #dc2626;
             --danger-light: rgba(239, 68, 68, 0.1);
-
             --warning: #f59e0b;
             --warning-light: rgba(245, 158, 11, 0.1);
-
             --success: #22c55e;
-            /* Green 500 */
             --success-light: rgba(34, 197, 94, 0.1);
-
             --info: #60a5fa;
-            /* Blue 400 */
             --info-light: rgba(96, 165, 250, 0.1);
-
             --chart-grid: rgba(161, 161, 170, 0.08);
-
             --sidebar-bg: #09090b;
             --input-bg: #18181b;
-
             --hover-bg: rgba(250, 250, 250, 0.04);
             --active-bg: rgba(250, 250, 250, 0.06);
-
             --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
             --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
             --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
-
             --glass-bg: rgba(24, 24, 27, 0.7);
             --glass-border: rgba(161, 161, 170, 0.06);
             --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
@@ -1463,6 +1437,33 @@
             panel.scrollTop = panel.scrollHeight;
         };
 
+        // ==================== UTILITY FUNCTIONS ====================
+
+        /**
+         * แปลงวันที่จาก YYYY-MM-DD HH:mm:ss เป็น วัน/เดือน/ปี 00:00:00
+         */
+        const formatDisplayDate = (dateStr) => {
+            if (!dateStr) return '-';
+            try {
+                // ถ้าเป็น string ที่มีรูปแบบ YYYY-MM-DD HH:mm:ss
+                const parts = dateStr.split(' ')[0].split('-');
+                if (parts.length === 3) {
+                    return parts[2] + '/' + parts[1] + '/' + parts[0] + ' 00:00:00';
+                }
+                // ถ้าเป็นรูปแบบอื่น ลอง parse
+                const d = new Date(dateStr);
+                if (!isNaN(d.getTime())) {
+                    const dd = String(d.getDate()).padStart(2, '0');
+                    const mm = String(d.getMonth() + 1).padStart(2, '0');
+                    const yyyy = d.getFullYear();
+                    return dd + '/' + mm + '/' + yyyy + ' 00:00:00';
+                }
+            } catch (e) {
+                // fallback
+            }
+            return dateStr;
+        };
+
         // ==================== CONTEXT ====================
         const AppContext = createContext();
         const useApp = () => useContext(AppContext);
@@ -2337,7 +2338,8 @@
                                         <th>ชื่อบัญชี</th>
                                         <th>แพ็คเกจ</th>
                                         <th>ร้านค้า</th>
-                                        <th>สถานะ</th>
+                                        <th>วันที่ซื้อ</th>
+                                        <th>วันหมดอายุ</th>
                                         <th>คงเหลือ</th>
                                     </tr>
                                 </thead>
@@ -2372,19 +2374,8 @@
                                                     <td className="font-semibold">{c.accountName}</td>
                                                     <td><span className="badge badge-info">{c.package}</span></td>
                                                     <td><span className="badge badge-neutral">{c.storeName}</span></td>
-                                                    <td>
-                                                        {c.status === 'active' || c.status === 'ใช้งาน' ? (
-                                                            <span className="badge badge-success">
-                                                                <span className="status-dot active"></span> ใช้งาน
-                                                            </span>
-                                                        ) : c.status === 'ว่าง' || c.status === 'available' ? (
-                                                            <span className="badge badge-info">
-                                                                <span className="status-dot available"></span> ว่าง
-                                                            </span>
-                                                        ) : (
-                                                            <span className="badge badge-neutral">{c.status || 'รอตรวจสอบ'}</span>
-                                                        )}
-                                                    </td>
+                                                    <td className="text-sm">{formatDisplayDate(c.purchaseDate)}</td>
+                                                    <td className="text-sm font-semibold">{formatDisplayDate(c.expiryDate)}</td>
                                                     <td>
                                                         <span className={`badge ${statusBadge.className}`}>
                                                             {statusBadge.text}
@@ -2395,7 +2386,7 @@
                                         })
                                     ) : (
                                         <tr>
-                                            <td colSpan="6">
+                                            <td colSpan="7">
                                                 <div className="empty-state" style={{ padding: '2rem 1rem' }}>
                                                     <i className="fa-solid fa-inbox"></i>
                                                     <p>ไม่มีข้อมูลลูกค้า</p>
@@ -2465,14 +2456,19 @@
 
             const openEdit = (customer) => {
                 setEditingCustomer(customer);
+                // Extract YYYY-MM-DD from YYYY-MM-DD HH:mm:ss for the date input
+                const extractDate = (dateStr) => {
+                    if (!dateStr) return '';
+                    return dateStr.split(' ')[0] || '';
+                };
                 setForm({
                     email: customer.email || '',
                     accountName: customer.accountName || '',
                     package: customer.package || '1 เดือน',
                     storeName: customer.storeName || '',
                     houseHead: customer.houseHead || '',
-                    purchaseDate: customer.purchaseDate || '',
-                    expiryDate: customer.expiryDate || '',
+                    purchaseDate: extractDate(customer.purchaseDate),
+                    expiryDate: extractDate(customer.expiryDate),
                     notificationEmail: customer.notificationEmail || '',
                     status: customer.status || 'active',
                 });
@@ -2622,8 +2618,8 @@
                                                     <td><span className="badge badge-info">{c.package}</span></td>
                                                     <td><span className="badge badge-neutral">{c.storeName}</span></td>
                                                     <td>{c.houseHead || <span className="text-muted">-</span>}</td>
-                                                    <td className="text-sm">{c.purchaseDate || '-'}</td>
-                                                    <td className="text-sm font-semibold">{c.expiryDate || '-'}</td>
+                                                    <td className="text-sm">{formatDisplayDate(c.purchaseDate)}</td>
+                                                    <td className="text-sm font-semibold">{formatDisplayDate(c.expiryDate)}</td>
                                                     <td>
                                                         <span className={`badge ${statusBadge.className}`}>
                                                             {statusBadge.text}
@@ -2792,7 +2788,6 @@
                 setSearched(false);
                 setResult(null);
 
-                // จำลอง delay เล็กน้อยเพื่อให้เห็น animation
                 setTimeout(() => {
                     const filtered = isAdmin ?
                         customers :
@@ -2938,11 +2933,11 @@
                                                     </tr>
                                                     <tr>
                                                         <td style={{ fontWeight: 600, color: 'var(--text-secondary)', padding: '0.5rem 0', fontSize: '0.8125rem' }}>วันที่เริ่มใช้งาน</td>
-                                                        <td className="text-sm">{result.purchaseDate || '-'}</td>
+                                                        <td className="text-sm">{formatDisplayDate(result.purchaseDate)}</td>
                                                     </tr>
                                                     <tr>
                                                         <td style={{ fontWeight: 600, color: 'var(--text-secondary)', padding: '0.5rem 0', fontSize: '0.8125rem' }}>วันที่หมดอายุ</td>
-                                                        <td className="font-semibold text-sm">{result.expiryDate || '-'}</td>
+                                                        <td className="font-semibold text-sm">{formatDisplayDate(result.expiryDate)}</td>
                                                     </tr>
                                                     <tr>
                                                         <td style={{ fontWeight: 600, color: 'var(--text-secondary)', padding: '0.5rem 0', fontSize: '0.8125rem' }}>สถานะ</td>
@@ -3491,7 +3486,7 @@
                 <div>
                     <div className="top-bar">
                         <h1 className="page-title">
-                            <span className="icon">🏠</span> จัดการหัวบ้าน
+                            <span className="icon"><i className="fa-solid fa-house-chimney"></i></span> จัดการหัวบ้าน
                         </h1>
                         <div className="quick-actions">
                             <span className="badge badge-info">
@@ -3953,15 +3948,6 @@
                     default:
                         return <Dashboard />;
                 }
-            };
-
-            const pageTitleMap = {
-                dashboard: 'แดชบอร์ด',
-                customers: 'จัดการลูกค้า',
-                family: 'จัดการหัวบ้าน',
-                check: 'เช็คข้อมูล',
-                profile: 'โปรไฟล์',
-                users: 'จัดการผู้ใช้',
             };
 
             return (
