@@ -33,6 +33,10 @@
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js">
     </script>
 
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11">
+    </script>
+
     <style>
         :root {
             --font-sans: 'Inter', 'Noto Sans Thai', system-ui, -apple-system, sans-serif;
@@ -1490,6 +1494,20 @@
         // 🔧 เปลี่ยนเป็น LIFF ID ของคุณจาก LINE Developers Console
         const LIFF_ID = '2009880685-UCuYnwIF';
 
+        // ==================== SWEETALERT2 HELPER ====================
+        const getSwalTheme = () => {
+            const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+            const isDark = theme === 'dark';
+            return {
+                background: isDark ? '#18181b' : '#ffffff',
+                color: isDark ? '#fafafa' : '#0f172a',
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: isDark ? '#3f3f46' : '#e2e8f0',
+                cancelButtonTextColor: isDark ? '#fafafa' : '#0f172a',
+                iconColor: '#ef4444',
+            };
+        };
+
         // ==================== DEBUG LOGGER ====================
         const debugLogs = [];
         const addDebugLog = (message, type = 'info') => {
@@ -2605,38 +2623,91 @@
 
             const handleSubmit = async () => {
                 if (!form.email || !form.accountName) {
-                    showToast('กรุณากรอกอีเมลและชื่อบัญชี', 'danger');
+                    Swal.fire({
+                        ...getSwalTheme(),
+                        icon: 'warning',
+                        title: 'ข้อมูลไม่ครบ',
+                        text: 'กรุณากรอกอีเมลและชื่อบัญชี',
+                    });
                     return;
                 }
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!emailRegex.test(form.email)) {
-                    showToast('รูปแบบอีเมลไม่ถูกต้อง', 'danger');
+                    Swal.fire({
+                        ...getSwalTheme(),
+                        icon: 'warning',
+                        title: 'รูปแบบอีเมลไม่ถูกต้อง',
+                        text: 'กรุณากรอกอีเมลให้ถูกต้อง',
+                    });
                     return;
                 }
                 try {
                     if (editingCustomer) {
                         await callAPI('updateCustomer', { ...form, id: editingCustomer.id || editingCustomer._id });
-                        showToast('อัปเดตข้อมูลสำเร็จ', 'success');
+                        Swal.fire({
+                            ...getSwalTheme(),
+                            icon: 'success',
+                            title: 'อัปเดตสำเร็จ',
+                            text: 'ข้อมูลลูกค้าถูกอัปเดตเรียบร้อยแล้ว',
+                            timer: 2000,
+                            showConfirmButton: false,
+                        });
                     } else {
                         await callAPI('addCustomer', form);
-                        showToast('เพิ่มลูกค้าสำเร็จ', 'success');
+                        Swal.fire({
+                            ...getSwalTheme(),
+                            icon: 'success',
+                            title: 'เพิ่มลูกค้าสำเร็จ',
+                            text: 'ลูกค้าใหม่ถูกเพิ่มเรียบร้อยแล้ว',
+                            timer: 2000,
+                            showConfirmButton: false,
+                        });
                     }
                     setShowModal(false);
                     resetForm();
                     loadCustomers(page);
                 } catch (e) {
-                    showToast('เกิดข้อผิดพลาด: ' + e.message, 'danger');
+                    Swal.fire({
+                        ...getSwalTheme(),
+                        icon: 'error',
+                        title: 'เกิดข้อผิดพลาด',
+                        text: e.message,
+                    });
                 }
             };
 
             const handleDelete = async (customer) => {
-                if (!window.confirm(`⚠️ ต้องการลบลูกค้า "${customer.email}" ใช่หรือไม่?\n\nการกระทำนี้ไม่สามารถเรียกคืนได้`)) return;
+                const result = await Swal.fire({
+                    ...getSwalTheme(),
+                    title: '⚠️ ยืนยันการลบ',
+                    html: `คุณต้องการลบลูกค้า "<strong>${customer.email}</strong>" ใช่หรือไม่?<br/><small>การกระทำนี้ไม่สามารถเรียกคืนได้</small>`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="fa-solid fa-trash-can"></i> ลบเลย',
+                    cancelButtonText: '<i class="fa-solid fa-xmark"></i> ยกเลิก',
+                    reverseButtons: true,
+                });
+
+                if (!result.isConfirmed) return;
+
                 try {
                     await callAPI('deleteCustomer', { id: customer.id || customer._id });
-                    showToast('ลบข้อมูลสำเร็จ', 'success');
+                    Swal.fire({
+                        ...getSwalTheme(),
+                        icon: 'success',
+                        title: 'ลบสำเร็จ',
+                        text: 'ข้อมูลลูกค้าถูกลบเรียบร้อยแล้ว',
+                        timer: 2000,
+                        showConfirmButton: false,
+                    });
                     loadCustomers(page);
                 } catch (e) {
-                    showToast('เกิดข้อผิดพลาด: ' + e.message, 'danger');
+                    Swal.fire({
+                        ...getSwalTheme(),
+                        icon: 'error',
+                        title: 'เกิดข้อผิดพลาด',
+                        text: e.message,
+                    });
                 }
             };
 
@@ -3149,6 +3220,23 @@
         // ==================== PROFILE PAGE ====================
         const ProfilePage = () => {
             const { user, logout } = useApp();
+
+            const handleLogout = () => {
+                Swal.fire({
+                    ...getSwalTheme(),
+                    title: 'ยืนยันการออกจากระบบ',
+                    text: 'คุณต้องการออกจากระบบใช่หรือไม่?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="fa-solid fa-right-from-bracket"></i> ออกจากระบบ',
+                    cancelButtonText: '<i class="fa-solid fa-xmark"></i> ยกเลิก',
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        logout();
+                    }
+                });
+            };
+
             return (
                 <div>
                     <div className="top-bar"><h1 className="page-title"><span className="icon"><i className="fa-solid fa-user-circle"></i></span> โปรไฟล์</h1></div>
@@ -3172,7 +3260,7 @@
                             </table>
                         </div>
                         <div style={{ textAlign: 'center', paddingTop: '1.25rem', borderTop: '1px solid var(--border-color)' }}>
-                            <button className="btn btn-danger" onClick={logout} style={{ borderRadius: 'var(--radius-full)', padding: '0.75rem 2rem' }}><i className="fa-solid fa-right-from-bracket"></i> ออกจากระบบ</button>
+                            <button className="btn btn-danger" onClick={handleLogout} style={{ borderRadius: 'var(--radius-full)', padding: '0.75rem 2rem' }}><i className="fa-solid fa-right-from-bracket"></i> ออกจากระบบ</button>
                         </div>
                     </div>
                 </div>
@@ -3212,23 +3300,42 @@
             };
 
             const handleSave = async () => {
-                if (!form.lineName.trim()) { showToast('กรุณากรอกชื่อไลน์', 'danger'); return; }
+                if (!form.lineName.trim()) {
+                    Swal.fire({ ...getSwalTheme(), icon: 'warning', title: 'ข้อมูลไม่ครบ', text: 'กรุณากรอกชื่อไลน์' });
+                    return;
+                }
                 try {
                     await callAPI('updateUser', { ...form, id: editingUser.id || editingUser._id });
-                    showToast('อัปเดตผู้ใช้สำเร็จ', 'success');
+                    Swal.fire({ ...getSwalTheme(), icon: 'success', title: 'อัปเดตผู้ใช้สำเร็จ', timer: 2000, showConfirmButton: false });
                     setShowModal(false);
                     fetchUsers(page);
-                } catch (e) { showToast('เกิดข้อผิดพลาด: ' + e.message, 'danger'); }
+                } catch (e) {
+                    Swal.fire({ ...getSwalTheme(), icon: 'error', title: 'ผิดพลาด', text: e.message });
+                }
             };
 
             const handleDelete = async (u) => {
-                if (u.id === currentUser?.id) { showToast('ไม่สามารถลบบัญชีตัวเองได้', 'danger'); return; }
-                if (!window.confirm(`⚠️ ต้องการลบผู้ใช้ "${u.lineName}" ใช่หรือไม่?\n\nการกระทำนี้ไม่สามารถเรียกคืนได้`)) return;
+                if (u.id === currentUser?.id) {
+                    Swal.fire({ ...getSwalTheme(), icon: 'error', title: 'ไม่สามารถลบบัญชีตัวเองได้' });
+                    return;
+                }
+                const result = await Swal.fire({
+                    ...getSwalTheme(),
+                    title: '⚠️ ยืนยันการลบผู้ใช้',
+                    html: `คุณต้องการลบผู้ใช้ "<strong>${u.lineName}</strong>" ใช่หรือไม่?<br/><small>การกระทำนี้ไม่สามารถเรียกคืนได้</small>`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="fa-solid fa-trash-can"></i> ลบเลย',
+                    cancelButtonText: '<i class="fa-solid fa-xmark"></i> ยกเลิก',
+                });
+                if (!result.isConfirmed) return;
                 try {
                     await callAPI('deleteUser', { id: u.id || u._id });
-                    showToast('ลบผู้ใช้สำเร็จ', 'success');
+                    Swal.fire({ ...getSwalTheme(), icon: 'success', title: 'ลบผู้ใช้สำเร็จ', timer: 2000, showConfirmButton: false });
                     fetchUsers(page);
-                } catch (e) { showToast('เกิดข้อผิดพลาด: ' + e.message, 'danger'); }
+                } catch (e) {
+                    Swal.fire({ ...getSwalTheme(), icon: 'error', title: 'ผิดพลาด', text: e.message });
+                }
             };
 
             const formatDate = (dateStr) => {
@@ -3342,55 +3449,92 @@
             useEffect(() => { if (isAdmin) fetchFamilyHeads(page); }, [page, fetchFamilyHeads, isAdmin]);
 
             const handleAddHead = async () => {
-                if (!headForm.email.trim()) { showToast('กรุณากรอกอีเมล', 'danger'); return; }
+                if (!headForm.email.trim()) {
+                    Swal.fire({ ...getSwalTheme(), icon: 'warning', title: 'กรุณากรอกอีเมล' });
+                    return;
+                }
                 try {
                     await callAPI('addFamilyHead', headForm);
-                    showToast('เพิ่มหัวบ้านสำเร็จ', 'success');
+                    Swal.fire({ ...getSwalTheme(), icon: 'success', title: 'เพิ่มหัวบ้านสำเร็จ', timer: 2000, showConfirmButton: false });
                     setShowAddHeadModal(false);
                     setHeadForm({ email: '', accountName: '', storeName: user?.storeName || '' });
                     fetchFamilyHeads(page);
-                } catch (e) { showToast('เกิดข้อผิดพลาด: ' + e.message, 'danger'); }
+                } catch (e) {
+                    Swal.fire({ ...getSwalTheme(), icon: 'error', title: 'ผิดพลาด', text: e.message });
+                }
             };
 
             const handleEditHead = async () => {
-                if (!editHeadForm.email.trim()) { showToast('กรุณากรอกอีเมล', 'danger'); return; }
+                if (!editHeadForm.email.trim()) {
+                    Swal.fire({ ...getSwalTheme(), icon: 'warning', title: 'กรุณากรอกอีเมล' });
+                    return;
+                }
                 try {
                     await callAPI('updateFamilyHead', { ...editHeadForm, id: selectedHead.id });
-                    showToast('อัปเดตหัวบ้านสำเร็จ', 'success');
+                    Swal.fire({ ...getSwalTheme(), icon: 'success', title: 'อัปเดตหัวบ้านสำเร็จ', timer: 2000, showConfirmButton: false });
                     setShowEditHeadModal(false);
                     setSelectedHead(null);
                     fetchFamilyHeads(page);
-                } catch (e) { showToast('เกิดข้อผิดพลาด: ' + e.message, 'danger'); }
+                } catch (e) {
+                    Swal.fire({ ...getSwalTheme(), icon: 'error', title: 'ผิดพลาด', text: e.message });
+                }
             };
 
             const handleDeleteHead = async (head) => {
-                if (!window.confirm(`⚠️ ต้องการลบหัวบ้าน "${head.email}" ใช่หรือไม่?\n\nสมาชิกทั้งหมดในบ้านนี้จะถูกลบด้วย`)) return;
+                const result = await Swal.fire({
+                    ...getSwalTheme(),
+                    title: '⚠️ ยืนยันการลบหัวบ้าน',
+                    html: `ลบ "<strong>${head.email}</strong>" และสมาชิกทั้งหมด?<br/><small>ไม่สามารถกู้คืนได้</small>`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="fa-solid fa-trash-can"></i> ลบ',
+                    cancelButtonText: 'ยกเลิก',
+                });
+                if (!result.isConfirmed) return;
                 try {
                     await callAPI('deleteFamilyHead', { id: head.id });
-                    showToast('ลบหัวบ้านสำเร็จ', 'success');
+                    Swal.fire({ ...getSwalTheme(), icon: 'success', title: 'ลบหัวบ้านแล้ว', timer: 2000, showConfirmButton: false });
                     fetchFamilyHeads(page);
-                } catch (e) { showToast('เกิดข้อผิดพลาด: ' + e.message, 'danger'); }
+                } catch (e) {
+                    Swal.fire({ ...getSwalTheme(), icon: 'error', title: 'ผิดพลาด', text: e.message });
+                }
             };
 
             const handleAddMember = async () => {
-                if (!memberEmail.trim()) { showToast('กรุณากรอกอีเมลสมาชิก', 'danger'); return; }
+                if (!memberEmail.trim()) {
+                    Swal.fire({ ...getSwalTheme(), icon: 'warning', title: 'กรุณากรอกอีเมลสมาชิก' });
+                    return;
+                }
                 try {
                     await callAPI('addMemberToFamily', { familyHeadId: selectedHead.id, memberEmail: memberEmail.trim() });
-                    showToast('เพิ่มสมาชิกสำเร็จ', 'success');
+                    Swal.fire({ ...getSwalTheme(), icon: 'success', title: 'เพิ่มสมาชิกสำเร็จ', timer: 2000, showConfirmButton: false });
                     setMemberEmail('');
                     setShowAddMemberModal(false);
                     fetchFamilyHeads(page);
-                } catch (e) { showToast('เกิดข้อผิดพลาด: ' + e.message, 'danger'); }
+                } catch (e) {
+                    Swal.fire({ ...getSwalTheme(), icon: 'error', title: 'ผิดพลาด', text: e.message });
+                }
             };
 
             const handleRemoveMember = async (memberEmailToRemove) => {
-                if (!window.confirm(`⚠️ ต้องการลบสมาชิก "${memberEmailToRemove}" ออกจากบ้านนี้ใช่หรือไม่?`)) return;
+                const result = await Swal.fire({
+                    ...getSwalTheme(),
+                    title: 'ลบสมาชิก',
+                    html: `ลบ "<strong>${memberEmailToRemove}</strong>" ออกจากบ้านนี้?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'ลบ',
+                    cancelButtonText: 'ยกเลิก',
+                });
+                if (!result.isConfirmed) return;
                 try {
                     await callAPI('removeMemberFromFamily', { familyHeadId: selectedHead.id, memberEmail: memberEmailToRemove });
-                    showToast('ลบสมาชิกสำเร็จ', 'success');
+                    Swal.fire({ ...getSwalTheme(), icon: 'success', title: 'ลบสมาชิกแล้ว', timer: 2000, showConfirmButton: false });
                     fetchFamilyHeads(page);
                     if (showDetailModal && selectedHead) openDetail(selectedHead);
-                } catch (e) { showToast('เกิดข้อผิดพลาด: ' + e.message, 'danger'); }
+                } catch (e) {
+                    Swal.fire({ ...getSwalTheme(), icon: 'error', title: 'ผิดพลาด', text: e.message });
+                }
             };
 
             const openDetail = async (head) => {
@@ -3399,7 +3543,9 @@
                     const data = await callAPI('getFamilyHeadDetail', { id: head.id });
                     setFamilyHeadDetail(data.familyHead);
                     setShowDetailModal(true);
-                } catch (e) { showToast('เกิดข้อผิดพลาดในการโหลดรายละเอียด', 'danger'); }
+                } catch (e) {
+                    Swal.fire({ ...getSwalTheme(), icon: 'error', title: 'เกิดข้อผิดพลาดในการโหลดรายละเอียด' });
+                }
             };
 
             const openEdit = (head) => {
@@ -3481,7 +3627,7 @@
                         )}
                     </div>
 
-                    {/* Modals เหมือนเดิมทุกประการ */}
+                    {/* Modals */}
                     {showAddHeadModal && (
                         <div className="modal-overlay" onClick={() => setShowAddHeadModal(false)}>
                             <div className="modal" onClick={e => e.stopPropagation()}>
