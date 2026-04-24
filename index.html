@@ -45,40 +45,67 @@
             --radius-full: 9999px;
         }
 
-        /* Dark Theme */
+        /* Dark Theme (Minimal Black/White/Gray) */
         [data-theme="dark"] {
-            --bg-primary: #0f172a;
-            --bg-secondary: #1e293b;
-            --bg-tertiary: #334155;
-            --bg-card: #1e293b;
-            --text-primary: #f1f5f9;
-            --text-secondary: #94a3b8;
-            --text-tertiary: #64748b;
-            --border-color: rgba(148, 163, 184, 0.1);
-            --border-accent: rgba(239, 68, 68, 0.3);
-            --accent: #ef4444;
-            --accent-hover: #dc2626;
-            --accent-light: rgba(239, 68, 68, 0.1);
+            --bg-primary: #09090b;
+            /* Zinc 950 - darkest */
+            --bg-secondary: #18181b;
+            /* Zinc 900 */
+            --bg-tertiary: #27272a;
+            /* Zinc 800 */
+            --bg-card: #18181b;
+
+            --text-primary: #fafafa;
+            /* Zinc 50 - brightest */
+            --text-secondary: #a1a1aa;
+            /* Zinc 400 */
+            --text-tertiary: #71717a;
+            /* Zinc 500 */
+
+            --border-color: rgba(161, 161, 170, 0.1);
+            /* Zinc 400 @ 10% */
+            --border-accent: rgba(250, 250, 250, 0.15);
+            /* Zinc 50 @ 15% */
+
+            /* Accent - ใช้สีขาว/เทาอ่อน แทนสีแดง */
+            --accent: #fafafa;
+            /* Zinc 50 */
+            --accent-hover: #e4e4e7;
+            /* Zinc 200 */
+            --accent-light: rgba(250, 250, 250, 0.08);
+            --accent-glow: rgba(250, 250, 250, 0.1);
+
+            /* Danger - เก็บสีแดงไว้สำหรับ action ลบ/อันตราย */
             --danger: #ef4444;
             --danger-hover: #dc2626;
             --danger-light: rgba(239, 68, 68, 0.1);
+
             --warning: #f59e0b;
             --warning-light: rgba(245, 158, 11, 0.1);
-            --success: #10b981;
-            --success-light: rgba(16, 185, 129, 0.1);
-            --info: #3b82f6;
-            --info-light: rgba(59, 130, 246, 0.1);
-            --chart-grid: rgba(148, 163, 184, 0.1);
-            --sidebar-bg: #0f172a;
-            --input-bg: #1e293b;
-            --hover-bg: rgba(255, 255, 255, 0.03);
-            --active-bg: rgba(239, 68, 68, 0.1);
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-            --glass-bg: rgba(30, 41, 59, 0.7);
-            --glass-border: rgba(148, 163, 184, 0.08);
-            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+
+            --success: #22c55e;
+            /* Green 500 */
+            --success-light: rgba(34, 197, 94, 0.1);
+
+            --info: #60a5fa;
+            /* Blue 400 */
+            --info-light: rgba(96, 165, 250, 0.1);
+
+            --chart-grid: rgba(161, 161, 170, 0.08);
+
+            --sidebar-bg: #09090b;
+            --input-bg: #18181b;
+
+            --hover-bg: rgba(250, 250, 250, 0.04);
+            --active-bg: rgba(250, 250, 250, 0.06);
+
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+
+            --glass-bg: rgba(24, 24, 27, 0.7);
+            --glass-border: rgba(161, 161, 170, 0.06);
+            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
         }
 
         /* Light Theme */
