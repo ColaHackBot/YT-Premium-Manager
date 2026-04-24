@@ -1405,7 +1405,7 @@
         // ==================== CONFIG ====================
         // 🔧 เปลี่ยน URL นี้เป็นของ Google Apps Script ของคุณ
         const APPS_SCRIPT_URL =
-            'https://script.google.com/macros/s/AKfycbyw5pq_WqoX3FhZzphRX8a4tVzIcN-N22xXvL3ZUGwnATuAAw8bjyokEdRRJkqR-DIX/exec';
+            'https://script.google.com/macros/s/AKfycbzrzkgNah6bJ7ihAf55QXlxcQUYaUDqiexAG1Y61ud4QAKu6up_kXsSJKRBci-zZNJK/exec';
 
         // 🔧 เปลี่ยนเป็น LIFF ID ของคุณจาก LINE Developers Console
         const LIFF_ID = '2009880685-UCuYnwIF';
@@ -1591,14 +1591,15 @@
                 setTimeout(() => setToast(null), 3500);
             };
 
+            // ✅ แก้ไขแล้ว: ย้าย ...params ไปไว้หลัง storeName เพื่อให้สามารถ override ชื่อร้านค้าได้
             const callAPI = useCallback(async (action, params = {}) => {
                 try {
                     const requestData = {
                         action,
-                        ...params,
                         userId: user?.id || user?.userId,
                         userRank: user?.rank || 0,
-                        storeName: user?.storeName || 'My Shop'
+                        storeName: user?.storeName || 'My Shop',
+                        ...params   // <-- วางไว้หลังสุด เพื่อให้ params ที่ส่งมาตรงนี้มีผลสูงสุด
                     };
                     const payload = encodeURIComponent(JSON.stringify(requestData));
                     const url = `${APPS_SCRIPT_URL}?payload=${payload}`;
