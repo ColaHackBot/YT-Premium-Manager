@@ -1405,7 +1405,7 @@
         // ==================== CONFIG ====================
         // 🔧 เปลี่ยน URL นี้เป็นของ Google Apps Script ของคุณ
         const APPS_SCRIPT_URL =
-            'https://script.google.com/macros/s/AKfycbxSpUf1yXCAyeluXYmP0_T9jHV_RJYm6WljCVzm0a0SuVMgIhxQwchyhTmuS5ztc3xK/exec';
+            'https://script.google.com/macros/s/AKfycbw4tPim63qYdI1MGrtCtz3TzY4jOuXTjhYkCJmFcaJx5BreUPaeZpS63hxsZfXe_VTp/exec';
 
         // 🔧 เปลี่ยนเป็น LIFF ID ของคุณจาก LINE Developers Console
         const LIFF_ID = '2009880685-UCuYnwIF';
@@ -1964,6 +1964,8 @@
                 // ✅ เฉพาะแอดมินเท่านั้นที่เห็นเมนูจัดการหัวบ้าน
                 ...(isAdmin ? [{ id: 'family', label: 'จัดการหัวบ้าน', icon: 'fa-house-chimney' }] : []),
                 { id: 'check', label: 'เช็คข้อมูล', icon: 'fa-magnifying-glass' },
+                // ✅ เพิ่มเมนูประวัติ
+                { id: 'history', label: 'ประวัติ', icon: 'fa-clock-rotate-left' },
                 { id: 'profile', label: 'โปรไฟล์', icon: 'fa-user-circle' },
                 ...(isAdmin ? [{ id: 'users', label: 'จัดการผู้ใช้', icon: 'fa-user-shield', admin: true }] : []),
             ];
@@ -2048,6 +2050,7 @@
                 // ✅ เฉพาะแอดมินเท่านั้นที่เห็นเมนูหัวบ้าน
                 ...(isAdmin ? [{ id: 'family', label: 'หัวบ้าน', icon: 'fa-house-chimney' }] : []),
                 { id: 'check', label: 'ค้นหา', icon: 'fa-magnifying-glass' },
+                { id: 'history', label: 'ประวัติ', icon: 'fa-clock-rotate-left' },
                 ...(isAdmin ? [{ id: 'users', label: 'ผู้ใช้', icon: 'fa-user-shield' }] : [{
                     id: 'profile',
                     label: 'โปรไฟล์',
@@ -2055,6 +2058,7 @@
                 }]),
             ];
 
+            // แสดงสูงสุด 5 ปุ่ม
             const displayItems = items.slice(0, 5);
 
             return (
@@ -3361,6 +3365,348 @@
             );
         };
 
+        // ==================== HISTORY PAGE ====================
+        const HistoryPage = () => {
+            const { callAPI, user } = useApp();
+            const [logs, setLogs] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [selectedLog, setSelectedLog] = useState(null);
+            const [filter, setFilter] = useState('all'); // all, add, edit, delete, login
+
+            const fetchLogs = useCallback(async () => {
+                setLoading(true);
+                try {
+                    const data = await callAPI('getLogs');
+                    setLogs(data.logs || []);
+                } catch (e) {
+                    // error handled in callAPI
+                }
+                setLoading(false);
+            }, [callAPI]);
+
+            useEffect(() => {
+                fetchLogs();
+            }, [fetchLogs]);
+
+            const formatAction = (action) => {
+                const map = {
+                    'loginOrRegister': '🔑 เข้าสู่ระบบ/สมัครสมาชิก',
+                    'getCustomers': '📋 ดูรายชื่อลูกค้า',
+                    'addCustomer': '➕ เพิ่มลูกค้า',
+                    'updateCustomer': '✏️ แก้ไขลูกค้า',
+                    'deleteCustomer': '🗑️ ลบลูกค้า',
+                    'checkCustomer': '🔍 ตรวจสอบลูกค้า',
+                    'getDashboardStats': '📊 ดูแดชบอร์ด',
+                    'getUsers': '👥 ดูผู้ใช้',
+                    'updateUser': '✏️ แก้ไขผู้ใช้',
+                    'deleteUser': '🗑️ ลบผู้ใช้',
+                    'getFamilyHeads': '🏠 ดูหัวบ้าน',
+                    'addFamilyHead': '➕ เพิ่มหัวบ้าน',
+                    'updateFamilyHead': '✏️ แก้ไขหัวบ้าน',
+                    'deleteFamilyHead': '🗑️ ลบหัวบ้าน',
+                    'addMemberToFamily': '➕ เพิ่มสมาชิกบ้าน',
+                    'removeMemberFromFamily': '➖ ลบสมาชิกบ้าน',
+                    'getFamilyHeadDetail': '🔍 ดูรายละเอียดหัวบ้าน',
+                    'getUserProfile': '👤 ดูโปรไฟล์',
+                };
+                return map[action] || `📌 ${action}`;
+            };
+
+            const formatDetail = (log) => {
+                try {
+                    const details = typeof log.details === 'string' ? JSON.parse(log.details) : log.details;
+
+                    if (details.action === 'updateCustomer' && details.oldData && details.newData) {
+                        return `✏️ แก้ไข: ${details.oldData.email || details.oldData.accountName}`;
+                    } else if (details.action === 'deleteCustomer' && details.deletedData) {
+                        return `🗑️ ลบ: ${details.deletedData.email} (${details.deletedData.accountName})`;
+                    } else if (details.action === 'addCustomer' && details.newData) {
+                        return `➕ เพิ่ม: ${details.newData.email} (${details.newData.accountName})`;
+                    } else if (details.action === 'updateUser' && details.oldData) {
+                        return `✏️ แก้ไขผู้ใช้: ${details.oldData.lineName}`;
+                    } else if (details.action === 'deleteUser' && details.deletedData) {
+                        return `🗑️ ลบผู้ใช้: ${details.deletedData.lineName}`;
+                    } else if (details.action === 'register' && details.newUser) {
+                        return `🆕 สมัครสมาชิก: ${details.newUser.lineName}`;
+                    } else if (details.action === 'addFamilyHead' && details.newData) {
+                        return `➕ เพิ่มหัวบ้าน: ${details.newData.email}`;
+                    } else if (details.action === 'updateFamilyHead' && details.oldData) {
+                        return `✏️ แก้ไขหัวบ้าน: ${details.oldData.email}`;
+                    } else if (details.action === 'deleteFamilyHead' && details.deletedData) {
+                        return `🗑️ ลบหัวบ้าน: ${details.deletedData.email}`;
+                    } else if (details.action === 'addMemberToFamily') {
+                        return `➕ เพิ่มสมาชิก: ${details.memberEmail}`;
+                    } else if (details.action === 'removeMemberFromFamily') {
+                        return `➖ ลบสมาชิก: ${details.memberEmail}`;
+                    }
+
+                    // Fallback แสดง preview
+                    const str = typeof log.details === 'string' ? log.details : JSON.stringify(log.details);
+                    return str.length > 100 ? str.substring(0, 100) + '...' : str;
+                } catch (e) {
+                    const str = log.details || '';
+                    return str.length > 100 ? str.substring(0, 100) + '...' : str;
+                }
+            };
+
+            const openDetail = (log) => {
+                setSelectedLog(log);
+            };
+
+            const getActionIcon = (action) => {
+                if (action.includes('add') || action === 'register') return 'fa-plus-circle';
+                if (action.includes('update')) return 'fa-pen-to-square';
+                if (action.includes('delete') || action.includes('remove')) return 'fa-trash-can';
+                if (action.includes('login') || action === 'loginOrRegister') return 'fa-right-to-bracket';
+                if (action.includes('check') || action.includes('get')) return 'fa-magnifying-glass';
+                return 'fa-circle-info';
+            };
+
+            const getActionColor = (action) => {
+                if (action.includes('add') || action === 'register') return 'var(--success)';
+                if (action.includes('update')) return 'var(--info)';
+                if (action.includes('delete') || action.includes('remove')) return 'var(--danger)';
+                if (action.includes('login') || action === 'loginOrRegister') return 'var(--warning)';
+                return 'var(--text-secondary)';
+            };
+
+            // กรอง logs
+            const filteredLogs = logs.filter(log => {
+                if (filter === 'all') return true;
+                if (filter === 'add') return log.action.includes('add') || log.action === 'register';
+                if (filter === 'edit') return log.action.includes('update');
+                if (filter === 'delete') return log.action.includes('delete') || log.action.includes('remove');
+                if (filter === 'login') return log.action === 'loginOrRegister' || log.action === 'login';
+                return true;
+            });
+
+            if (loading) {
+                return (
+                    <div>
+                        <div className="top-bar">
+                            <h1 className="page-title">
+                                <span className="icon"><i className="fa-solid fa-clock-rotate-left"></i></span> ประวัติการใช้งาน
+                            </h1>
+                        </div>
+                        <div className="glass-card">
+                            <div className="loading-spinner">
+                                <div className="spinner"></div>
+                                <p className="text-muted">กำลังโหลดประวัติ...</p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div>
+                    <div className="top-bar">
+                        <h1 className="page-title">
+                            <span className="icon"><i className="fa-solid fa-clock-rotate-left"></i></span> ประวัติการใช้งาน
+                            {user?.rank === 1 && <span className="badge badge-danger" style={{ fontSize: '0.625rem' }}>เห็นทั้งหมด</span>}
+                        </h1>
+                        <div className="quick-actions">
+                            <span className="badge badge-info">
+                                <i className="fa-solid fa-list-ol"></i> {filteredLogs.length} รายการ
+                            </span>
+                            <button className="btn btn-secondary btn-sm" onClick={fetchLogs}>
+                                <i className="fa-solid fa-rotate"></i> รีเฟรช
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Filter Bar */}
+                    <div className="glass-card" style={{ marginBottom: '1rem', padding: '0.75rem 1rem' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            <button
+                                className={`btn btn-sm ${filter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
+                                onClick={() => setFilter('all')}
+                            >
+                                📋 ทั้งหมด
+                            </button>
+                            <button
+                                className={`btn btn-sm ${filter === 'add' ? 'btn-primary' : 'btn-secondary'}`}
+                                onClick={() => setFilter('add')}
+                            >
+                                ➕ เพิ่ม
+                            </button>
+                            <button
+                                className={`btn btn-sm ${filter === 'edit' ? 'btn-primary' : 'btn-secondary'}`}
+                                onClick={() => setFilter('edit')}
+                            >
+                                ✏️ แก้ไข
+                            </button>
+                            <button
+                                className={`btn btn-sm ${filter === 'delete' ? 'btn-primary' : 'btn-secondary'}`}
+                                onClick={() => setFilter('delete')}
+                            >
+                                🗑️ ลบ
+                            </button>
+                            <button
+                                className={`btn btn-sm ${filter === 'login' ? 'btn-primary' : 'btn-secondary'}`}
+                                onClick={() => setFilter('login')}
+                            >
+                                🔑 เข้าสู่ระบบ
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="glass-card">
+                        {filteredLogs.length === 0 ? (
+                            <div className="empty-state">
+                                <i className="fa-solid fa-clock"></i>
+                                <p>ไม่มีประวัติการใช้งาน</p>
+                                <p className="text-sm text-muted">ข้อมูลการใช้งานจะปรากฏเมื่อมีการทำรายการต่างๆ</p>
+                            </div>
+                        ) : (
+                            <div className="table-wrapper">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>เวลา</th>
+                                            <th>ประเภท</th>
+                                            <th>สรุป</th>
+                                            <th>ดู</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {filteredLogs.map((log, i) => {
+                                            const actionColor = getActionColor(log.action);
+                                            const actionIcon = getActionIcon(log.action);
+                                            return (
+                                                <tr key={i}>
+                                                    <td className="text-sm font-mono" style={{ fontSize: '0.75rem' }}>
+                                                        {new Date(log.timestamp).toLocaleString('th-TH', {
+                                                            year: 'numeric',
+                                                            month: 'short',
+                                                            day: 'numeric',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit',
+                                                            second: '2-digit'
+                                                        })}
+                                                    </td>
+                                                    <td>
+                                                        <span style={{
+                                                            display: 'inline-flex',
+                                                            alignItems: 'center',
+                                                            gap: '0.375rem',
+                                                            color: actionColor,
+                                                            fontWeight: 600,
+                                                            fontSize: '0.8125rem',
+                                                        }}>
+                                                            <i className={`fa-solid ${actionIcon}`}></i>
+                                                            {formatAction(log.action)}
+                                                        </span>
+                                                    </td>
+                                                    <td className="text-sm" style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{formatDetail(log)}</td>
+                                                    <td>
+                                                        <button
+                                                            className="btn btn-info btn-xs"
+                                                            onClick={() => openDetail(log)}
+                                                            title="ดูรายละเอียด"
+                                                        >
+                                                            <i className="fa-solid fa-eye"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Modal รายละเอียด */}
+                    {selectedLog && (
+                        <div className="modal-overlay" onClick={() => setSelectedLog(null)}>
+                            <div className="modal" onClick={e => e.stopPropagation()}>
+                                <h2>
+                                    <i className="fa-solid fa-magnifying-glass"></i> รายละเอียดการทำรายการ
+                                </h2>
+
+                                <div className="neo-card" style={{ marginBottom: '1rem' }}>
+                                    <table style={{ width: '100%' }}>
+                                        <tbody>
+                                            <tr>
+                                                <td style={{ fontWeight: 600, width: '100px', padding: '0.5rem 0', fontSize: '0.8125rem' }}>เวลา</td>
+                                                <td className="font-mono text-sm">
+                                                    {new Date(selectedLog.timestamp).toLocaleString('th-TH', {
+                                                        year: 'numeric',
+                                                        month: 'long',
+                                                        day: 'numeric',
+                                                        hour: '2-digit',
+                                                        minute: '2-digit',
+                                                        second: '2-digit'
+                                                    })}
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style={{ fontWeight: 600, padding: '0.5rem 0', fontSize: '0.8125rem' }}>ประเภท</td>
+                                                <td>
+                                                    <span style={{
+                                                        color: getActionColor(selectedLog.action),
+                                                        fontWeight: 600,
+                                                    }}>
+                                                        <i className={`fa-solid ${getActionIcon(selectedLog.action)}`}></i>
+                                                        {' '}{formatAction(selectedLog.action)}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                            {selectedLog.storeName && (
+                                                <tr>
+                                                    <td style={{ fontWeight: 600, padding: '0.5rem 0', fontSize: '0.8125rem' }}>ร้านค้า</td>
+                                                    <td><span className="badge badge-neutral">{selectedLog.storeName}</span></td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div className="neo-card">
+                                    <h3 style={{ marginBottom: '0.75rem', fontSize: '0.9375rem', fontWeight: 600 }}>
+                                        <i className="fa-solid fa-file-lines" style={{ color: 'var(--info)', marginRight: '0.5rem' }}></i>
+                                        ข้อมูลโดยละเอียด
+                                    </h3>
+                                    <pre style={{
+                                        background: 'var(--bg-tertiary)',
+                                        padding: '1rem',
+                                        borderRadius: 'var(--radius-md)',
+                                        overflowX: 'auto',
+                                        fontSize: '0.75rem',
+                                        maxHeight: '400px',
+                                        overflowY: 'auto',
+                                        whiteSpace: 'pre-wrap',
+                                        wordBreak: 'break-word',
+                                        fontFamily: 'var(--font-mono)',
+                                        lineHeight: 1.6,
+                                        border: '1px solid var(--border-color)',
+                                    }}>
+                                        {(() => {
+                                            try {
+                                                const details = typeof selectedLog.details === 'string'
+                                                    ? JSON.parse(selectedLog.details)
+                                                    : selectedLog.details;
+                                                return JSON.stringify(details, null, 2);
+                                            } catch (e) {
+                                                return selectedLog.details || '-';
+                                            }
+                                        })()}
+                                    </pre>
+                                </div>
+
+                                <div className="modal-actions">
+                                    <button className="btn btn-secondary" onClick={() => setSelectedLog(null)}>
+                                        <i className="fa-solid fa-xmark"></i> ปิด
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
         // ==================== FAMILY HEADS PAGE (ADMIN ONLY) ====================
         const FamilyHeadsPage = () => {
             const { user, callAPI, showToast, setCurrentPage } = useApp();
@@ -4014,6 +4360,8 @@
                         return <FamilyHeadsPage />;
                     case 'check':
                         return <CheckPage />;
+                    case 'history':
+                        return <HistoryPage />;
                     case 'profile':
                         return <ProfilePage />;
                     case 'users':
