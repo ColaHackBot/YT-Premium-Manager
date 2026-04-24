@@ -1208,24 +1208,6 @@
             }
         }
 
-        /* Skeleton Loading */
-        .skeleton {
-            background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--hover-bg) 50%, var(--bg-tertiary) 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s infinite;
-            border-radius: var(--radius-md);
-        }
-
-        @keyframes shimmer {
-            0% {
-                background-position: -200% 0;
-            }
-
-            100% {
-                background-position: 200% 0;
-            }
-        }
-
         /* Debug Panel */
         .debug-panel {
             position: fixed;
@@ -1423,7 +1405,7 @@
         // ==================== CONFIG ====================
         // 🔧 เปลี่ยน URL นี้เป็นของ Google Apps Script ของคุณ
         const APPS_SCRIPT_URL =
-            'https://script.google.com/macros/s/AKfycbwhvdy8v6LQS-spIRyD0tf1_HHic8Sxozfk1g5HvhD149qQo-18kDaDf4NESshtaR8o/exec';
+            'https://script.google.com/macros/s/AKfycbxdk0C76kH4xIJV8aTqqFz_NKhD_gSgwfbAY3tc-B2nFZbxxpJ1Ft5Y_ClSA5bO6ZZm/exec';
 
         // 🔧 เปลี่ยนเป็น LIFF ID ของคุณจาก LINE Developers Console
         const LIFF_ID = '2009880685-UCuYnwIF';
@@ -1559,7 +1541,6 @@
             const [customers, setCustomers] = useState([]);
             const [users, setUsers] = useState([]);
             const [loading, setLoading] = useState(true);
-            const [dataLoading, setDataLoading] = useState(false); // ✅ แยก state สำหรับโหลดข้อมูล
             const [liffReady, setLiffReady] = useState(false);
             const [toast, setToast] = useState(null);
             const [debugVisible, setDebugVisible] = useState(false);
@@ -1617,7 +1598,7 @@
                         userId: user?.id || user?.userId,
                         userRank: user?.rank || 0,
                         storeName: user?.storeName || 'My Shop',
-                        ...params
+                        ...params   // <-- วางไว้หลังสุด เพื่อให้ params ที่ส่งมาตรงนี้มีผลสูงสุด
                     };
                     const payload = encodeURIComponent(JSON.stringify(requestData));
                     const url = `${APPS_SCRIPT_URL}?payload=${payload}`;
@@ -1659,12 +1640,8 @@
                         addDebugLog(
                             `User logged in: ${userData.lineName} (rank: ${userData.rank}, store: ${userData.storeName})`,
                             'success');
-
-                        // ✅ หยุด Fullscreen Loading ทันที
+                        await loadInitialData(userData);
                         setLoading(false);
-
-                        // ✅ โหลดข้อมูลใน background
-                        loadInitialData(userData);
                     } else {
                         throw new Error(data.message || 'Login failed');
                     }
@@ -1676,27 +1653,48 @@
             };
 
             const loadInitialData = async (currentUser) => {
-                addDebugLog('=== Loading initial data (background) ===', 'info');
-                setDataLoading(true);
+                addDebugLog('=== Loading all initial data ===', 'info');
                 try {
-                    // ✅ ใช้ Action เดียว: getInitialData
-                    const data = await callAPI('getInitialData');
-                    if (data.success) {
-                        setCustomers(data.customers || []);
-                        addDebugLog(`Loaded ${data.customers?.length || 0} customers ${data.fromCache ? '(from cache)' : ''}`, 'success');
-
-                        if (currentUser.rank === 1 && data.users) {
-                            setUsers(data.users || []);
-                            addDebugLog(`Loaded ${data.users?.length || 0} users`, 'success');
-                        }
+                    // Load Customers
+                    const customersPayload = encodeURIComponent(JSON.stringify({
+                        action: 'getCustomers',
+                        userId: currentUser.id || currentUser.userId,
+                        userRank: currentUser.rank || 0,
+                        storeName: currentUser.storeName || 'My Shop'
+                    }));
+                    const customersUrl = `${APPS_SCRIPT_URL}?payload=${customersPayload}`;
+                    const customersResponse = await fetch(customersUrl, { method: 'GET' });
+                    const customersData = await customersResponse.json();
+                    if (customersData.success) {
+                        setCustomers(customersData.customers || []);
+                        addDebugLog(`Loaded ${customersData.customers?.length || 0} customers`, 'success');
                     } else {
-                        addDebugLog('Failed to load initial data: ' + (data.message || 'Unknown error'), 'warning');
+                        addDebugLog('Failed to load customers: ' + (customersData.message || 'Unknown error'), 'warning');
                     }
-                    addDebugLog('=== Initial data loaded ===', 'success');
+
+                    // Load Users (Admin only)
+                    if (currentUser.rank === 1) {
+                        const usersPayload = encodeURIComponent(JSON.stringify({
+                            action: 'getUsers',
+                            userId: currentUser.id || currentUser.userId,
+                            userRank: currentUser.rank || 0,
+                            storeName: currentUser.storeName || 'My Shop'
+                        }));
+                        const usersUrl = `${APPS_SCRIPT_URL}?payload=${usersPayload}`;
+                        const usersResponse = await fetch(usersUrl, { method: 'GET' });
+                        const usersData = await usersResponse.json();
+                        if (usersData.success) {
+                            setUsers(usersData.users || []);
+                            addDebugLog(`Loaded ${usersData.users?.length || 0} users`, 'success');
+                        } else {
+                            addDebugLog('Failed to load users: ' + (usersData.message || 'Unknown error'), 'warning');
+                        }
+                    }
+
+                    addDebugLog('=== All initial data loaded ===', 'success');
                 } catch (error) {
                     addDebugLog(`Failed to load initial data: ${error.message}`, 'error');
-                } finally {
-                    setDataLoading(false);
+                    showToast('เกิดข้อผิดพลาดในการโหลดข้อมูลเริ่มต้น', 'warning');
                 }
             };
 
@@ -1718,7 +1716,6 @@
                 setUsers([]);
                 setCurrentPage('dashboard');
                 setSidebarOpen(false);
-                setDataLoading(false);
                 showToast('ออกจากระบบแล้ว');
             };
 
@@ -1759,8 +1756,6 @@
                 setUsers,
                 loading,
                 setLoading,
-                dataLoading,
-                setDataLoading,
                 liffReady,
                 callAPI,
                 showToast,
@@ -1867,11 +1862,11 @@
                                 <div className="loading-spinner" style={{ minHeight: '80px' }}>
                                     <div className="spinner"></div>
                                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.9375rem' }}>
-                                        กำลังโหลดระบบ...
+                                        กำลังโหลดข้อมูล...
                                     </p>
                                 </div>
                                 <p className="text-xs text-muted" style={{ marginTop: '1rem' }}>
-                                    <i className="fa-solid fa-database"></i> กำลังเชื่อมต่อกับ LINE
+                                    <i className="fa-solid fa-database"></i> กำลังเชื่อมต่อกับฐานข้อมูล
                                 </p>
                             </>
                         ) : (
@@ -1958,16 +1953,6 @@
             );
         };
 
-        // ==================== SKELETON LOADING ====================
-        const SkeletonCard = ({ lines = 5 }) => (
-            <div className="glass-card">
-                <div className="loading-spinner" style={{ minHeight: '150px', padding: '2rem' }}>
-                    <div className="spinner" style={{ width: '2rem', height: '2rem', borderWidth: '3px' }}></div>
-                    <p className="text-muted text-sm">กำลังโหลดข้อมูล...</p>
-                </div>
-            </div>
-        );
-
         // ==================== SIDEBAR ====================
         const Sidebar = () => {
             const { user, currentPage, setCurrentPage, sidebarOpen, setSidebarOpen, logout } = useApp();
@@ -1976,8 +1961,10 @@
             const navItems = [
                 { id: 'dashboard', label: 'แดชบอร์ด', icon: 'fa-chart-pie' },
                 { id: 'customers', label: 'จัดการลูกค้า', icon: 'fa-users' },
+                // ✅ เฉพาะแอดมินเท่านั้นที่เห็นเมนูจัดการหัวบ้าน
                 ...(isAdmin ? [{ id: 'family', label: 'จัดการหัวบ้าน', icon: 'fa-house-chimney' }] : []),
                 { id: 'check', label: 'เช็คข้อมูล', icon: 'fa-magnifying-glass' },
+                // ✅ เพิ่มเมนูประวัติ
                 { id: 'history', label: 'ประวัติ', icon: 'fa-clock-rotate-left' },
                 { id: 'profile', label: 'โปรไฟล์', icon: 'fa-user-circle' },
                 ...(isAdmin ? [{ id: 'users', label: 'จัดการผู้ใช้', icon: 'fa-user-shield', admin: true }] : []),
@@ -2060,12 +2047,18 @@
             const items = [
                 { id: 'dashboard', label: 'แดชบอร์ด', icon: 'fa-chart-pie' },
                 { id: 'customers', label: 'ลูกค้า', icon: 'fa-users' },
+                // ✅ เฉพาะแอดมินเท่านั้นที่เห็นเมนูหัวบ้าน
                 ...(isAdmin ? [{ id: 'family', label: 'หัวบ้าน', icon: 'fa-house-chimney' }] : []),
                 { id: 'check', label: 'ค้นหา', icon: 'fa-magnifying-glass' },
                 { id: 'history', label: 'ประวัติ', icon: 'fa-clock-rotate-left' },
-                ...(isAdmin ? [{ id: 'users', label: 'ผู้ใช้', icon: 'fa-user-shield' }] : [{ id: 'profile', label: 'โปรไฟล์', icon: 'fa-user' }]),
+                ...(isAdmin ? [{ id: 'users', label: 'ผู้ใช้', icon: 'fa-user-shield' }] : [{
+                    id: 'profile',
+                    label: 'โปรไฟล์',
+                    icon: 'fa-user'
+                }]),
             ];
 
+            // แสดงสูงสุด 5 ปุ่ม
             const displayItems = items.slice(0, 5);
 
             return (
@@ -2086,7 +2079,7 @@
 
         // ==================== DASHBOARD PAGE ====================
         const Dashboard = () => {
-            const { customers, user, dataLoading } = useApp();
+            const { customers, user } = useApp();
             const isAdmin = user?.rank === 1;
 
             const filteredCustomers = isAdmin ?
@@ -2120,7 +2113,8 @@
             });
 
             const latestCustomers = [...filteredCustomers]
-                .sort((a, b) => new Date(b.createdAt || b.purchaseDate || 0) - new Date(a.createdAt || a.purchaseDate || 0))
+                .sort((a, b) => new Date(b.createdAt || b.purchaseDate || 0) - new Date(a.createdAt || a
+                    .purchaseDate || 0))
                 .slice(0, 5);
 
             const barChartRef = useRef(null);
@@ -2268,35 +2262,6 @@
                 return { className: 'badge-success', text: `✅ ${remaining} วัน` };
             };
 
-            // ✅ แสดง Skeleton ขณะโหลดข้อมูล
-            if (dataLoading && customers.length === 0) {
-                return (
-                    <div>
-                        <div className="top-bar">
-                            <h1 className="page-title">
-                                <span className="icon"><i className="fa-solid fa-chart-pie"></i></span> แดชบอร์ด
-                            </h1>
-                        </div>
-                        <div className="stats-grid">
-                            {[...Array(4)].map((_, i) => (
-                                <div key={i} className="stat-card glass-card">
-                                    <div className="stat-icon"><div className="spinner" style={{ width: '1.5rem', height: '1.5rem', borderWidth: '2px' }}></div></div>
-                                    <div className="stat-info">
-                                        <div className="skeleton" style={{ width: '3rem', height: '1.75rem', marginBottom: '0.25rem' }}></div>
-                                        <div className="skeleton" style={{ width: '5rem', height: '0.75rem' }}></div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="charts-row">
-                            <SkeletonCard />
-                            <SkeletonCard />
-                        </div>
-                        <SkeletonCard />
-                    </div>
-                );
-            }
-
             return (
                 <div>
                     <div className="top-bar">
@@ -2442,9 +2407,9 @@
             );
         };
 
-        // ==================== CUSTOMERS PAGE ====================
+        // ==================== CUSTOMERS PAGE (UPDATED WITH AUTO EXPIRY CALCULATION) ====================
         const CustomersPage = () => {
-            const { customers, user, callAPI, fetchCustomers, showToast, dataLoading } = useApp();
+            const { customers, user, callAPI, fetchCustomers, showToast } = useApp();
             const isAdmin = user?.rank === 1;
             const [search, setSearch] = useState('');
             const [showModal, setShowModal] = useState(false);
@@ -2461,8 +2426,9 @@
                 status: 'active',
             });
 
+            // --- ฟังก์ชันช่วยคำนวณวันที่ ---
             const getTodayDateString = () => {
-                const d = new Date();
+                const d = new Date();  // local time ของผู้ใช้ (ควรเป็นประเทศไทย)
                 const yyyy = d.getFullYear();
                 const mm = String(d.getMonth() + 1).padStart(2, '0');
                 const dd = String(d.getDate()).padStart(2, '0');
@@ -2474,6 +2440,7 @@
                 const monthsMatch = packageStr && packageStr.match(/(\d+)\s*เดือน/);
                 if (!monthsMatch) return '';
                 const months = parseInt(monthsMatch[1]);
+                // สร้าง Date จาก local time (ใช้วันที่ที่รับเข้ามา ตีความเป็นเวลาเที่ยงคืน)
                 const d = new Date(purchaseDate + 'T00:00:00');
                 d.setMonth(d.getMonth() + months);
                 const yyyy = d.getFullYear();
@@ -2482,6 +2449,7 @@
                 return `${yyyy}-${mm}-${dd}`;
             };
 
+            // ปรับค่าเมื่อเปลี่ยนแพ็กเกจ
             const handlePackageChange = (value) => {
                 setForm(prev => ({
                     ...prev,
@@ -2490,6 +2458,7 @@
                 }));
             };
 
+            // ปรับค่าเมื่อเปลี่ยนวันที่ซื้อ
             const handlePurchaseDateChange = (value) => {
                 setForm(prev => ({
                     ...prev,
@@ -2498,6 +2467,7 @@
                 }));
             };
 
+            // รีเซ็ตฟอร์มสำหรับเพิ่มลูกค้าใหม่
             const resetForm = () => {
                 setEditingCustomer(null);
                 const today = getTodayDateString();
@@ -2507,8 +2477,8 @@
                     package: '1 เดือน',
                     storeName: user?.storeName || '',
                     houseHead: '',
-                    purchaseDate: today,
-                    expiryDate: calculateExpiry(today, '1 เดือน'),
+                    purchaseDate: today,                        // ตั้งเป็นวันนี้
+                    expiryDate: calculateExpiry(today, '1 เดือน'), // คำนวณ 1 เดือนจากวันนี้
                     notificationEmail: 'sampan082@gmail.com',
                     status: 'active',
                 });
@@ -2521,6 +2491,7 @@
 
             const openEdit = (customer) => {
                 setEditingCustomer(customer);
+                // Extract YYYY-MM-DD from YYYY-MM-DD HH:mm:ss for the date input
                 const extractDate = (dateStr) => {
                     if (!dateStr) return '';
                     return dateStr.split(' ')[0] || '';
@@ -2533,7 +2504,7 @@
                     storeName: customer.storeName || '',
                     houseHead: customer.houseHead || '',
                     purchaseDate: pDate,
-                    expiryDate: calculateExpiry(pDate, customer.package || '1 เดือน'),
+                    expiryDate: calculateExpiry(pDate, customer.package || '1 เดือน'), // คำนวณใหม่
                     notificationEmail: customer.notificationEmail || '',
                     status: customer.status || 'active',
                 });
@@ -2616,19 +2587,8 @@
                     (c.storeName || '').toLowerCase().includes((search || '').toLowerCase()) ||
                     (c.houseHead || '').toLowerCase().includes((search || '').toLowerCase())
                 )
-                .sort((a, b) => new Date(b.createdAt || b.purchaseDate || 0) - new Date(a.createdAt || a.purchaseDate || 0));
-
-            // ✅ Skeleton ขณะโหลดข้อมูล
-            if (dataLoading && customers.length === 0) {
-                return (
-                    <div>
-                        <div className="top-bar">
-                            <h1 className="page-title"><span className="icon"><i className="fa-solid fa-users"></i></span> จัดการลูกค้า</h1>
-                        </div>
-                        <SkeletonCard />
-                    </div>
-                );
-            }
+                .sort((a, b) => new Date(b.createdAt || b.purchaseDate || 0) - new Date(a.createdAt || a.purchaseDate ||
+                    0));
 
             return (
                 <div>
@@ -2887,7 +2847,7 @@
                     setResult(found || null);
                     setSearched(true);
                     setSearching(false);
-                }, 200); // ลด delay จาก 400ms เหลือ 200ms
+                }, 400);
             };
 
             const handleKeyDown = (e) => {
@@ -3182,7 +3142,7 @@
 
         // ==================== USERS PAGE (ADMIN ONLY) ====================
         const UsersPage = () => {
-            const { users, callAPI, fetchUsers, showToast, user: currentUser, dataLoading } = useApp();
+            const { users, callAPI, fetchUsers, showToast, user: currentUser } = useApp();
             const [showModal, setShowModal] = useState(false);
             const [editingUser, setEditingUser] = useState(null);
             const [form, setForm] = useState({ lineName: '', storeName: '', rank: 0 });
@@ -3224,7 +3184,9 @@
                 }
                 if (!window.confirm(`⚠️ ต้องการลบผู้ใช้ "${u.lineName}" ใช่หรือไม่?\n\nการกระทำนี้ไม่สามารถเรียกคืนได้`)) return;
                 try {
-                    await callAPI('deleteUser', { id: u.id || u._id });
+                    await callAPI('deleteUser', {
+                        id: u.id || u._id
+                    });
                     showToast('ลบผู้ใช้สำเร็จ', 'success');
                     await fetchUsers();
                 } catch (e) {
@@ -3236,7 +3198,9 @@
                 if (!dateStr) return '-';
                 try {
                     return new Date(dateStr).toLocaleDateString('th-TH', {
-                        year: 'numeric', month: 'short', day: 'numeric',
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
                     });
                 } catch (e) { return '-'; }
             };
@@ -3245,22 +3209,14 @@
                 if (!dateStr) return '-';
                 try {
                     return new Date(dateStr).toLocaleString('th-TH', {
-                        year: 'numeric', month: 'short', day: 'numeric',
-                        hour: '2-digit', minute: '2-digit',
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
                     });
                 } catch (e) { return '-'; }
             };
-
-            if (dataLoading && users.length === 0) {
-                return (
-                    <div>
-                        <div className="top-bar">
-                            <h1 className="page-title"><span className="icon"><i className="fa-solid fa-user-shield"></i></span> จัดการผู้ใช้</h1>
-                        </div>
-                        <SkeletonCard />
-                    </div>
-                );
-            }
 
             return (
                 <div>
@@ -3415,7 +3371,7 @@
             const [logs, setLogs] = useState([]);
             const [loading, setLoading] = useState(true);
             const [selectedLog, setSelectedLog] = useState(null);
-            const [filter, setFilter] = useState('all');
+            const [filter, setFilter] = useState('all'); // all, add, edit, delete, login
 
             const fetchLogs = useCallback(async () => {
                 setLoading(true);
@@ -3484,6 +3440,7 @@
                         return `➖ ลบสมาชิก: ${details.memberEmail}`;
                     }
 
+                    // Fallback แสดง preview
                     const str = typeof log.details === 'string' ? log.details : JSON.stringify(log.details);
                     return str.length > 100 ? str.substring(0, 100) + '...' : str;
                 } catch (e) {
@@ -3492,7 +3449,9 @@
                 }
             };
 
-            const openDetail = (log) => setSelectedLog(log);
+            const openDetail = (log) => {
+                setSelectedLog(log);
+            };
 
             const getActionIcon = (action) => {
                 if (action.includes('add') || action === 'register') return 'fa-plus-circle';
@@ -3511,6 +3470,7 @@
                 return 'var(--text-secondary)';
             };
 
+            // กรอง logs
             const filteredLogs = logs.filter(log => {
                 if (filter === 'all') return true;
                 if (filter === 'add') return log.action.includes('add') || log.action === 'register';
@@ -3528,7 +3488,12 @@
                                 <span className="icon"><i className="fa-solid fa-clock-rotate-left"></i></span> ประวัติการใช้งาน
                             </h1>
                         </div>
-                        <SkeletonCard />
+                        <div className="glass-card">
+                            <div className="loading-spinner">
+                                <div className="spinner"></div>
+                                <p className="text-muted">กำลังโหลดประวัติ...</p>
+                            </div>
+                        </div>
                     </div>
                 );
             }
@@ -3550,20 +3515,39 @@
                         </div>
                     </div>
 
+                    {/* Filter Bar */}
                     <div className="glass-card" style={{ marginBottom: '1rem', padding: '0.75rem 1rem' }}>
                         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                            {['all', 'add', 'edit', 'delete', 'login'].map(f => (
-                                <button
-                                    key={f}
-                                    className={`btn btn-sm ${filter === f ? 'btn-primary' : 'btn-secondary'}`}
-                                    onClick={() => setFilter(f)}
-                                >
-                                    {f === 'all' ? '📋 ทั้งหมด' :
-                                        f === 'add' ? '➕ เพิ่ม' :
-                                            f === 'edit' ? '✏️ แก้ไข' :
-                                                f === 'delete' ? '🗑️ ลบ' : '🔑 เข้าสู่ระบบ'}
-                                </button>
-                            ))}
+                            <button
+                                className={`btn btn-sm ${filter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
+                                onClick={() => setFilter('all')}
+                            >
+                                📋 ทั้งหมด
+                            </button>
+                            <button
+                                className={`btn btn-sm ${filter === 'add' ? 'btn-primary' : 'btn-secondary'}`}
+                                onClick={() => setFilter('add')}
+                            >
+                                ➕ เพิ่ม
+                            </button>
+                            <button
+                                className={`btn btn-sm ${filter === 'edit' ? 'btn-primary' : 'btn-secondary'}`}
+                                onClick={() => setFilter('edit')}
+                            >
+                                ✏️ แก้ไข
+                            </button>
+                            <button
+                                className={`btn btn-sm ${filter === 'delete' ? 'btn-primary' : 'btn-secondary'}`}
+                                onClick={() => setFilter('delete')}
+                            >
+                                🗑️ ลบ
+                            </button>
+                            <button
+                                className={`btn btn-sm ${filter === 'login' ? 'btn-primary' : 'btn-secondary'}`}
+                                onClick={() => setFilter('login')}
+                            >
+                                🔑 เข้าสู่ระบบ
+                            </button>
                         </div>
                     </div>
 
@@ -3593,19 +3577,34 @@
                                                 <tr key={i}>
                                                     <td className="text-sm font-mono" style={{ fontSize: '0.75rem' }}>
                                                         {new Date(log.timestamp).toLocaleString('th-TH', {
-                                                            year: 'numeric', month: 'short', day: 'numeric',
-                                                            hour: '2-digit', minute: '2-digit', second: '2-digit'
+                                                            year: 'numeric',
+                                                            month: 'short',
+                                                            day: 'numeric',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit',
+                                                            second: '2-digit'
                                                         })}
                                                     </td>
                                                     <td>
-                                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem', color: actionColor, fontWeight: 600, fontSize: '0.8125rem' }}>
+                                                        <span style={{
+                                                            display: 'inline-flex',
+                                                            alignItems: 'center',
+                                                            gap: '0.375rem',
+                                                            color: actionColor,
+                                                            fontWeight: 600,
+                                                            fontSize: '0.8125rem',
+                                                        }}>
                                                             <i className={`fa-solid ${actionIcon}`}></i>
                                                             {formatAction(log.action)}
                                                         </span>
                                                     </td>
                                                     <td className="text-sm" style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{formatDetail(log)}</td>
                                                     <td>
-                                                        <button className="btn btn-info btn-xs" onClick={() => openDetail(log)} title="ดูรายละเอียด">
+                                                        <button
+                                                            className="btn btn-info btn-xs"
+                                                            onClick={() => openDetail(log)}
+                                                            title="ดูรายละเอียด"
+                                                        >
                                                             <i className="fa-solid fa-eye"></i>
                                                         </button>
                                                     </td>
@@ -3618,10 +3617,14 @@
                         )}
                     </div>
 
+                    {/* Modal รายละเอียด */}
                     {selectedLog && (
                         <div className="modal-overlay" onClick={() => setSelectedLog(null)}>
                             <div className="modal" onClick={e => e.stopPropagation()}>
-                                <h2><i className="fa-solid fa-magnifying-glass"></i> รายละเอียดการทำรายการ</h2>
+                                <h2>
+                                    <i className="fa-solid fa-magnifying-glass"></i> รายละเอียดการทำรายการ
+                                </h2>
+
                                 <div className="neo-card" style={{ marginBottom: '1rem' }}>
                                     <table style={{ width: '100%' }}>
                                         <tbody>
@@ -3629,15 +3632,22 @@
                                                 <td style={{ fontWeight: 600, width: '100px', padding: '0.5rem 0', fontSize: '0.8125rem' }}>เวลา</td>
                                                 <td className="font-mono text-sm">
                                                     {new Date(selectedLog.timestamp).toLocaleString('th-TH', {
-                                                        year: 'numeric', month: 'long', day: 'numeric',
-                                                        hour: '2-digit', minute: '2-digit', second: '2-digit'
+                                                        year: 'numeric',
+                                                        month: 'long',
+                                                        day: 'numeric',
+                                                        hour: '2-digit',
+                                                        minute: '2-digit',
+                                                        second: '2-digit'
                                                     })}
                                                 </td>
                                             </tr>
                                             <tr>
                                                 <td style={{ fontWeight: 600, padding: '0.5rem 0', fontSize: '0.8125rem' }}>ประเภท</td>
                                                 <td>
-                                                    <span style={{ color: getActionColor(selectedLog.action), fontWeight: 600 }}>
+                                                    <span style={{
+                                                        color: getActionColor(selectedLog.action),
+                                                        fontWeight: 600,
+                                                    }}>
                                                         <i className={`fa-solid ${getActionIcon(selectedLog.action)}`}></i>
                                                         {' '}{formatAction(selectedLog.action)}
                                                     </span>
@@ -3652,25 +3662,39 @@
                                         </tbody>
                                     </table>
                                 </div>
+
                                 <div className="neo-card">
                                     <h3 style={{ marginBottom: '0.75rem', fontSize: '0.9375rem', fontWeight: 600 }}>
                                         <i className="fa-solid fa-file-lines" style={{ color: 'var(--info)', marginRight: '0.5rem' }}></i>
                                         ข้อมูลโดยละเอียด
                                     </h3>
                                     <pre style={{
-                                        background: 'var(--bg-tertiary)', padding: '1rem', borderRadius: 'var(--radius-md)',
-                                        overflowX: 'auto', fontSize: '0.75rem', maxHeight: '400px', overflowY: 'auto',
-                                        whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontFamily: 'var(--font-mono)',
-                                        lineHeight: 1.6, border: '1px solid var(--border-color)',
+                                        background: 'var(--bg-tertiary)',
+                                        padding: '1rem',
+                                        borderRadius: 'var(--radius-md)',
+                                        overflowX: 'auto',
+                                        fontSize: '0.75rem',
+                                        maxHeight: '400px',
+                                        overflowY: 'auto',
+                                        whiteSpace: 'pre-wrap',
+                                        wordBreak: 'break-word',
+                                        fontFamily: 'var(--font-mono)',
+                                        lineHeight: 1.6,
+                                        border: '1px solid var(--border-color)',
                                     }}>
                                         {(() => {
                                             try {
-                                                const details = typeof selectedLog.details === 'string' ? JSON.parse(selectedLog.details) : selectedLog.details;
+                                                const details = typeof selectedLog.details === 'string'
+                                                    ? JSON.parse(selectedLog.details)
+                                                    : selectedLog.details;
                                                 return JSON.stringify(details, null, 2);
-                                            } catch (e) { return selectedLog.details || '-'; }
+                                            } catch (e) {
+                                                return selectedLog.details || '-';
+                                            }
                                         })()}
                                     </pre>
                                 </div>
+
                                 <div className="modal-actions">
                                     <button className="btn btn-secondary" onClick={() => setSelectedLog(null)}>
                                         <i className="fa-solid fa-xmark"></i> ปิด
@@ -3695,10 +3719,19 @@
             const [showDetailModal, setShowDetailModal] = useState(false);
             const [selectedHead, setSelectedHead] = useState(null);
             const [memberEmail, setMemberEmail] = useState('');
-            const [headForm, setHeadForm] = useState({ email: '', accountName: '', storeName: user?.storeName || '' });
-            const [editHeadForm, setEditHeadForm] = useState({ email: '', accountName: '', storeName: '' });
+            const [headForm, setHeadForm] = useState({
+                email: '',
+                accountName: '',
+                storeName: user?.storeName || ''
+            });
+            const [editHeadForm, setEditHeadForm] = useState({
+                email: '',
+                accountName: '',
+                storeName: ''
+            });
             const [familyHeadDetail, setFamilyHeadDetail] = useState(null);
 
+            // ✅ ตรวจสอบสิทธิ์ ถ้าไม่ใช่แอดมินให้ redirect ไปหน้าแดชบอร์ด
             useEffect(() => {
                 if (!isAdmin) {
                     showToast('คุณไม่มีสิทธิ์เข้าถึงหน้านี้', 'warning');
@@ -3719,59 +3752,93 @@
             }, [callAPI, showToast, isAdmin]);
 
             useEffect(() => {
-                if (isAdmin) fetchFamilyHeads();
+                if (isAdmin) {
+                    fetchFamilyHeads();
+                }
             }, [fetchFamilyHeads, isAdmin]);
 
             const handleAddHead = async () => {
-                if (!headForm.email.trim()) { showToast('กรุณากรอกอีเมล', 'danger'); return; }
+                if (!headForm.email.trim()) {
+                    showToast('กรุณากรอกอีเมล', 'danger');
+                    return;
+                }
                 try {
                     await callAPI('addFamilyHead', headForm);
                     showToast('เพิ่มหัวบ้านสำเร็จ', 'success');
                     setShowAddHeadModal(false);
                     setHeadForm({ email: '', accountName: '', storeName: user?.storeName || '' });
                     fetchFamilyHeads();
-                } catch (e) { showToast('เกิดข้อผิดพลาด: ' + e.message, 'danger'); }
+                } catch (e) {
+                    showToast('เกิดข้อผิดพลาด: ' + e.message, 'danger');
+                }
             };
 
             const handleEditHead = async () => {
-                if (!editHeadForm.email.trim()) { showToast('กรุณากรอกอีเมล', 'danger'); return; }
+                if (!editHeadForm.email.trim()) {
+                    showToast('กรุณากรอกอีเมล', 'danger');
+                    return;
+                }
                 try {
-                    await callAPI('updateFamilyHead', { ...editHeadForm, id: selectedHead.id });
+                    await callAPI('updateFamilyHead', {
+                        ...editHeadForm,
+                        id: selectedHead.id
+                    });
                     showToast('อัปเดตหัวบ้านสำเร็จ', 'success');
                     setShowEditHeadModal(false);
                     setSelectedHead(null);
                     fetchFamilyHeads();
-                } catch (e) { showToast('เกิดข้อผิดพลาด: ' + e.message, 'danger'); }
+                } catch (e) {
+                    showToast('เกิดข้อผิดพลาด: ' + e.message, 'danger');
+                }
             };
 
             const handleDeleteHead = async (head) => {
-                if (!window.confirm(`⚠️ ต้องการลบหัวบ้าน "${head.email}" ใช่หรือไม่?\n\nสมาชิกทั้งหมดในบ้านนี้จะถูกลบด้วย`)) return;
+                if (!window.confirm(
+                    `⚠️ ต้องการลบหัวบ้าน "${head.email}" ใช่หรือไม่?\n\nสมาชิกทั้งหมดในบ้านนี้จะถูกลบด้วย`
+                )) return;
                 try {
                     await callAPI('deleteFamilyHead', { id: head.id });
                     showToast('ลบหัวบ้านสำเร็จ', 'success');
                     fetchFamilyHeads();
-                } catch (e) { showToast('เกิดข้อผิดพลาด: ' + e.message, 'danger'); }
+                } catch (e) {
+                    showToast('เกิดข้อผิดพลาด: ' + e.message, 'danger');
+                }
             };
 
             const handleAddMember = async () => {
-                if (!memberEmail.trim()) { showToast('กรุณากรอกอีเมลสมาชิก', 'danger'); return; }
+                if (!memberEmail.trim()) {
+                    showToast('กรุณากรอกอีเมลสมาชิก', 'danger');
+                    return;
+                }
                 try {
-                    await callAPI('addMemberToFamily', { familyHeadId: selectedHead.id, memberEmail: memberEmail.trim() });
+                    await callAPI('addMemberToFamily', {
+                        familyHeadId: selectedHead.id,
+                        memberEmail: memberEmail.trim()
+                    });
                     showToast('เพิ่มสมาชิกสำเร็จ', 'success');
                     setMemberEmail('');
                     setShowAddMemberModal(false);
                     fetchFamilyHeads();
-                } catch (e) { showToast('เกิดข้อผิดพลาด: ' + e.message, 'danger'); }
+                } catch (e) {
+                    showToast('เกิดข้อผิดพลาด: ' + e.message, 'danger');
+                }
             };
 
             const handleRemoveMember = async (memberEmailToRemove) => {
                 if (!window.confirm(`⚠️ ต้องการลบสมาชิก "${memberEmailToRemove}" ออกจากบ้านนี้ใช่หรือไม่?`)) return;
                 try {
-                    await callAPI('removeMemberFromFamily', { familyHeadId: selectedHead.id, memberEmail: memberEmailToRemove });
+                    await callAPI('removeMemberFromFamily', {
+                        familyHeadId: selectedHead.id,
+                        memberEmail: memberEmailToRemove
+                    });
                     showToast('ลบสมาชิกสำเร็จ', 'success');
                     fetchFamilyHeads();
-                    if (showDetailModal && selectedHead) openDetail(selectedHead);
-                } catch (e) { showToast('เกิดข้อผิดพลาด: ' + e.message, 'danger'); }
+                    if (showDetailModal && selectedHead) {
+                        openDetail(selectedHead);
+                    }
+                } catch (e) {
+                    showToast('เกิดข้อผิดพลาด: ' + e.message, 'danger');
+                }
             };
 
             const openDetail = async (head) => {
@@ -3780,12 +3847,18 @@
                     const data = await callAPI('getFamilyHeadDetail', { id: head.id });
                     setFamilyHeadDetail(data.familyHead);
                     setShowDetailModal(true);
-                } catch (e) { showToast('เกิดข้อผิดพลาดในการโหลดรายละเอียด', 'danger'); }
+                } catch (e) {
+                    showToast('เกิดข้อผิดพลาดในการโหลดรายละเอียด', 'danger');
+                }
             };
 
             const openEdit = (head) => {
                 setSelectedHead(head);
-                setEditHeadForm({ email: head.email || '', accountName: head.accountName || '', storeName: head.storeName || '' });
+                setEditHeadForm({
+                    email: head.email || '',
+                    accountName: head.accountName || '',
+                    storeName: head.storeName || ''
+                });
                 setShowEditHeadModal(true);
             };
 
@@ -3795,11 +3868,19 @@
                 setShowAddMemberModal(true);
             };
 
+            // ถ้าไม่ใช่แอดมินให้แสดง loading ระหว่างรอ redirect
             if (!isAdmin) {
                 return (
                     <div>
-                        <div className="top-bar"><h1 className="page-title"><span className="icon">🏠</span> จัดการหัวบ้าน</h1></div>
-                        <SkeletonCard />
+                        <div className="top-bar">
+                            <h1 className="page-title"><span className="icon">🏠</span> จัดการหัวบ้าน</h1>
+                        </div>
+                        <div className="glass-card">
+                            <div className="loading-spinner">
+                                <div className="spinner"></div>
+                                <p className="text-muted">กำลังตรวจสอบสิทธิ์...</p>
+                            </div>
+                        </div>
                     </div>
                 );
             }
@@ -3807,8 +3888,15 @@
             if (loading && familyHeads.length === 0) {
                 return (
                     <div>
-                        <div className="top-bar"><h1 className="page-title"><span className="icon">🏠</span> จัดการหัวบ้าน</h1></div>
-                        <SkeletonCard />
+                        <div className="top-bar">
+                            <h1 className="page-title"><span className="icon">🏠</span> จัดการหัวบ้าน</h1>
+                        </div>
+                        <div className="glass-card">
+                            <div className="loading-spinner">
+                                <div className="spinner"></div>
+                                <p className="text-muted">กำลังโหลดข้อมูลหัวบ้าน...</p>
+                            </div>
+                        </div>
                     </div>
                 );
             }
@@ -3820,7 +3908,9 @@
                             <span className="icon"><i className="fa-solid fa-house-chimney"></i></span> จัดการหัวบ้าน
                         </h1>
                         <div className="quick-actions">
-                            <span className="badge badge-info"><i className="fa-solid fa-house-chimney"></i> {familyHeads.length} หัวบ้าน</span>
+                            <span className="badge badge-info">
+                                <i className="fa-solid fa-house-chimney"></i> {familyHeads.length} หัวบ้าน
+                            </span>
                             <button className="btn btn-primary" onClick={() => setShowAddHeadModal(true)}>
                                 <i className="fa-solid fa-plus"></i> เพิ่มหัวบ้าน
                             </button>
@@ -3832,7 +3922,9 @@
                             <div className="empty-state">
                                 <i className="fa-solid fa-house-circle-exclamation"></i>
                                 <p>ไม่มีข้อมูลหัวบ้าน</p>
-                                <p className="text-sm text-muted" style={{ marginTop: '0.25rem' }}>คลิก "เพิ่มหัวบ้าน" เพื่อเริ่มต้น</p>
+                                <p className="text-sm text-muted" style={{ marginTop: '0.25rem' }}>
+                                    คลิก "เพิ่มหัวบ้าน" เพื่อเริ่มต้น
+                                </p>
                             </div>
                         ) : (
                             <div className="table-wrapper">
@@ -3855,7 +3947,19 @@
                                                 <tr key={i}>
                                                     <td>
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                            <div style={{ width: '2rem', height: '2rem', borderRadius: '50%', background: 'var(--active-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 600, color: 'var(--accent)', flexShrink: 0 }}>
+                                                            <div style={{
+                                                                width: '2rem',
+                                                                height: '2rem',
+                                                                borderRadius: '50%',
+                                                                background: 'var(--active-bg)',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                fontSize: '0.75rem',
+                                                                fontWeight: 600,
+                                                                color: 'var(--accent)',
+                                                                flexShrink: 0,
+                                                            }}>
                                                                 {head.email?.charAt(0).toUpperCase()}
                                                             </div>
                                                             <span className="font-semibold">{head.email}</span>
@@ -3876,16 +3980,33 @@
                                                     </td>
                                                     <td>
                                                         <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap' }}>
-                                                            <button className="btn btn-info btn-xs" onClick={() => openAddMember(head)} title="เพิ่มสมาชิก" disabled={isFull}>
+                                                            <button
+                                                                className="btn btn-info btn-xs"
+                                                                onClick={() => openAddMember(head)}
+                                                                title="เพิ่มสมาชิก"
+                                                                disabled={isFull}
+                                                            >
                                                                 <i className="fa-solid fa-user-plus"></i>
                                                             </button>
-                                                            <button className="btn btn-secondary btn-xs" onClick={() => openDetail(head)} title="ดูรายละเอียด">
+                                                            <button
+                                                                className="btn btn-secondary btn-xs"
+                                                                onClick={() => openDetail(head)}
+                                                                title="ดูรายละเอียด"
+                                                            >
                                                                 <i className="fa-solid fa-eye"></i>
                                                             </button>
-                                                            <button className="btn btn-secondary btn-xs" onClick={() => openEdit(head)} title="แก้ไข">
+                                                            <button
+                                                                className="btn btn-secondary btn-xs"
+                                                                onClick={() => openEdit(head)}
+                                                                title="แก้ไข"
+                                                            >
                                                                 <i className="fa-solid fa-pen-to-square"></i>
                                                             </button>
-                                                            <button className="btn btn-danger btn-xs" onClick={() => handleDeleteHead(head)} title="ลบ">
+                                                            <button
+                                                                className="btn btn-danger btn-xs"
+                                                                onClick={() => handleDeleteHead(head)}
+                                                                title="ลบ"
+                                                            >
                                                                 <i className="fa-solid fa-trash-can"></i>
                                                             </button>
                                                         </div>
@@ -3899,101 +4020,298 @@
                         )}
                     </div>
 
-                    {/* Modal sections remain the same but shortened for space */}
+                    {/* Add Family Head Modal */}
                     {showAddHeadModal && (
                         <div className="modal-overlay" onClick={() => setShowAddHeadModal(false)}>
                             <div className="modal" onClick={e => e.stopPropagation()}>
-                                <h2><i className="fa-solid fa-house-chimney-medical"></i> เพิ่มหัวบ้านใหม่</h2>
+                                <h2>
+                                    <i className="fa-solid fa-house-chimney-medical"></i> เพิ่มหัวบ้านใหม่
+                                </h2>
                                 <div className="grid-2">
-                                    <div className="input-group"><label>อีเมลหัวบ้าน *</label><input className="input-field" type="email" value={headForm.email} onChange={e => setHeadForm({ ...headForm, email: e.target.value })} placeholder="head@example.com" autoFocus /></div>
-                                    <div className="input-group"><label>ชื่อบัญชี</label><input className="input-field" value={headForm.accountName} onChange={e => setHeadForm({ ...headForm, accountName: e.target.value })} placeholder="ชื่อบัญชี YouTube" /></div>
-                                    <div className="input-group"><label>ร้านค้า</label><input className="input-field" value={headForm.storeName} onChange={e => setHeadForm({ ...headForm, storeName: e.target.value })} disabled={!isAdmin} /></div>
+                                    <div className="input-group">
+                                        <label>อีเมลหัวบ้าน *</label>
+                                        <input
+                                            className="input-field"
+                                            type="email"
+                                            value={headForm.email}
+                                            onChange={e => setHeadForm({ ...headForm, email: e.target.value })}
+                                            placeholder="head@example.com"
+                                            autoFocus
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>ชื่อบัญชี</label>
+                                        <input
+                                            className="input-field"
+                                            value={headForm.accountName}
+                                            onChange={e => setHeadForm({ ...headForm, accountName: e.target.value })}
+                                            placeholder="ชื่อบัญชี YouTube"
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>ร้านค้า</label>
+                                        <input
+                                            className="input-field"
+                                            value={headForm.storeName}
+                                            onChange={e => setHeadForm({ ...headForm, storeName: e.target.value })}
+                                            disabled={!isAdmin}
+                                        />
+                                    </div>
                                 </div>
-                                <div style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: 'var(--info-light)', borderRadius: 'var(--radius-md)', fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-                                    <i className="fa-solid fa-info-circle" style={{ color: 'var(--info)', marginRight: '0.5rem' }}></i> คุณสามารถเพิ่มสมาชิกในบ้านนี้ได้สูงสุด 5 คน
+                                <div style={{
+                                    marginTop: '1rem',
+                                    padding: '0.75rem 1rem',
+                                    background: 'var(--info-light)',
+                                    borderRadius: 'var(--radius-md)',
+                                    fontSize: '0.8125rem',
+                                    color: 'var(--text-secondary)',
+                                }}>
+                                    <i className="fa-solid fa-info-circle" style={{ color: 'var(--info)', marginRight: '0.5rem' }}></i>
+                                    คุณสามารถเพิ่มสมาชิกในบ้านนี้ได้สูงสุด 5 คน
                                 </div>
                                 <div className="modal-actions">
-                                    <button className="btn btn-secondary" onClick={() => setShowAddHeadModal(false)}><i className="fa-solid fa-xmark"></i> ยกเลิก</button>
-                                    <button className="btn btn-primary" onClick={handleAddHead}><i className="fa-solid fa-plus"></i> เพิ่มหัวบ้าน</button>
+                                    <button className="btn btn-secondary" onClick={() => setShowAddHeadModal(false)}>
+                                        <i className="fa-solid fa-xmark"></i> ยกเลิก
+                                    </button>
+                                    <button className="btn btn-primary" onClick={handleAddHead}>
+                                        <i className="fa-solid fa-plus"></i> เพิ่มหัวบ้าน
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     )}
 
+                    {/* Edit Family Head Modal */}
                     {showEditHeadModal && selectedHead && (
                         <div className="modal-overlay" onClick={() => setShowEditHeadModal(false)}>
                             <div className="modal" onClick={e => e.stopPropagation()}>
-                                <h2><i className="fa-solid fa-pen-to-square"></i> แก้ไขหัวบ้าน</h2>
+                                <h2>
+                                    <i className="fa-solid fa-pen-to-square"></i> แก้ไขหัวบ้าน
+                                </h2>
                                 <div className="grid-2">
-                                    <div className="input-group"><label>อีเมล *</label><input className="input-field" type="email" value={editHeadForm.email} onChange={e => setEditHeadForm({ ...editHeadForm, email: e.target.value })} /></div>
-                                    <div className="input-group"><label>ชื่อบัญชี</label><input className="input-field" value={editHeadForm.accountName} onChange={e => setEditHeadForm({ ...editHeadForm, accountName: e.target.value })} /></div>
-                                    <div className="input-group"><label>ร้านค้า</label><input className="input-field" value={editHeadForm.storeName} onChange={e => setEditHeadForm({ ...editHeadForm, storeName: e.target.value })} disabled={!isAdmin} /></div>
+                                    <div className="input-group">
+                                        <label>อีเมล *</label>
+                                        <input
+                                            className="input-field"
+                                            type="email"
+                                            value={editHeadForm.email}
+                                            onChange={e => setEditHeadForm({ ...editHeadForm, email: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>ชื่อบัญชี</label>
+                                        <input
+                                            className="input-field"
+                                            value={editHeadForm.accountName}
+                                            onChange={e => setEditHeadForm({ ...editHeadForm, accountName: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>ร้านค้า</label>
+                                        <input
+                                            className="input-field"
+                                            value={editHeadForm.storeName}
+                                            onChange={e => setEditHeadForm({ ...editHeadForm, storeName: e.target.value })}
+                                            disabled={!isAdmin}
+                                        />
+                                    </div>
                                 </div>
                                 <div className="modal-actions">
-                                    <button className="btn btn-secondary" onClick={() => setShowEditHeadModal(false)}><i className="fa-solid fa-xmark"></i> ยกเลิก</button>
-                                    <button className="btn btn-primary" onClick={handleEditHead}><i className="fa-solid fa-check"></i> บันทึก</button>
+                                    <button className="btn btn-secondary" onClick={() => setShowEditHeadModal(false)}>
+                                        <i className="fa-solid fa-xmark"></i> ยกเลิก
+                                    </button>
+                                    <button className="btn btn-primary" onClick={handleEditHead}>
+                                        <i className="fa-solid fa-check"></i> บันทึก
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     )}
 
+                    {/* Add Member Modal */}
                     {showAddMemberModal && selectedHead && (
                         <div className="modal-overlay" onClick={() => setShowAddMemberModal(false)}>
                             <div className="modal" onClick={e => e.stopPropagation()}>
-                                <h2><i className="fa-solid fa-user-plus"></i> เพิ่มสมาชิกในบ้าน</h2>
-                                <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>หัวบ้าน: <strong>{selectedHead.email}</strong> (สมาชิก: {selectedHead.memberCount || 0}/5)</p>
-                                <div className="input-group"><label>อีเมลสมาชิก *</label><input className="input-field" type="email" value={memberEmail} onChange={e => setMemberEmail(e.target.value)} placeholder="member@example.com" onKeyDown={e => e.key === 'Enter' && handleAddMember()} autoFocus /></div>
-                                <div style={{ marginTop: '0.75rem', padding: '0.75rem 1rem', background: 'var(--info-light)', borderRadius: 'var(--radius-md)', fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-                                    <i className="fa-solid fa-info-circle" style={{ color: 'var(--info)', marginRight: '0.5rem' }}></i> กรอกอีเมลทีละ 1 คน สูงสุด 5 คนต่อบ้าน
+                                <h2>
+                                    <i className="fa-solid fa-user-plus"></i> เพิ่มสมาชิกในบ้าน
+                                </h2>
+                                <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                                    หัวบ้าน: <strong>{selectedHead.email}</strong> (สมาชิก: {selectedHead.memberCount || 0}/5)
+                                </p>
+                                <div className="input-group">
+                                    <label>อีเมลสมาชิก *</label>
+                                    <input
+                                        className="input-field"
+                                        type="email"
+                                        value={memberEmail}
+                                        onChange={e => setMemberEmail(e.target.value)}
+                                        placeholder="member@example.com"
+                                        onKeyDown={e => e.key === 'Enter' && handleAddMember()}
+                                        autoFocus
+                                    />
+                                </div>
+                                <div style={{
+                                    marginTop: '0.75rem',
+                                    padding: '0.75rem 1rem',
+                                    background: 'var(--info-light)',
+                                    borderRadius: 'var(--radius-md)',
+                                    fontSize: '0.8125rem',
+                                    color: 'var(--text-secondary)',
+                                }}>
+                                    <i className="fa-solid fa-info-circle" style={{ color: 'var(--info)', marginRight: '0.5rem' }}></i>
+                                    กรอกอีเมลทีละ 1 คน สูงสุด 5 คนต่อบ้าน
                                 </div>
                                 <div className="modal-actions">
-                                    <button className="btn btn-secondary" onClick={() => setShowAddMemberModal(false)}><i className="fa-solid fa-xmark"></i> ปิด</button>
-                                    <button className="btn btn-primary" onClick={handleAddMember} disabled={parseInt(selectedHead.memberCount || 0) >= 5}><i className="fa-solid fa-plus"></i> เพิ่มสมาชิก</button>
+                                    <button className="btn btn-secondary" onClick={() => setShowAddMemberModal(false)}>
+                                        <i className="fa-solid fa-xmark"></i> ปิด
+                                    </button>
+                                    <button
+                                        className="btn btn-primary"
+                                        onClick={handleAddMember}
+                                        disabled={parseInt(selectedHead.memberCount || 0) >= 5}
+                                    >
+                                        <i className="fa-solid fa-plus"></i> เพิ่มสมาชิก
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     )}
 
+                    {/* Detail Modal */}
                     {showDetailModal && familyHeadDetail && (
                         <div className="modal-overlay" onClick={() => setShowDetailModal(false)}>
                             <div className="modal" onClick={e => e.stopPropagation()}>
-                                <h2><i className="fa-solid fa-house-chimney-user"></i> รายละเอียดหัวบ้าน</h2>
+                                <h2>
+                                    <i className="fa-solid fa-house-chimney-user"></i> รายละเอียดหัวบ้าน
+                                </h2>
+
                                 <div className="neo-card" style={{ marginBottom: '1rem' }}>
-                                    <h3 style={{ marginBottom: '1rem', fontSize: '1rem', fontWeight: 600 }}><i className="fa-solid fa-circle-info" style={{ color: 'var(--info)', marginRight: '0.5rem' }}></i> ข้อมูลหัวบ้าน</h3>
+                                    <h3 style={{ marginBottom: '1rem', fontSize: '1rem', fontWeight: 600 }}>
+                                        <i className="fa-solid fa-circle-info" style={{ color: 'var(--info)', marginRight: '0.5rem' }}></i>
+                                        ข้อมูลหัวบ้าน
+                                    </h3>
                                     <table style={{ width: '100%' }}>
                                         <tbody>
-                                            <tr><td style={{ fontWeight: 600, color: 'var(--text-secondary)', width: '120px', padding: '0.5rem 0', fontSize: '0.8125rem' }}>อีเมล</td><td className="font-semibold">{familyHeadDetail.email}</td></tr>
-                                            <tr><td style={{ fontWeight: 600, color: 'var(--text-secondary)', padding: '0.5rem 0', fontSize: '0.8125rem' }}>ชื่อบัญชี</td><td>{familyHeadDetail.accountName || '-'}</td></tr>
-                                            <tr><td style={{ fontWeight: 600, color: 'var(--text-secondary)', padding: '0.5rem 0', fontSize: '0.8125rem' }}>ร้านค้า</td><td><span className="badge badge-neutral">{familyHeadDetail.storeName}</span></td></tr>
-                                            <tr><td style={{ fontWeight: 600, color: 'var(--text-secondary)', padding: '0.5rem 0', fontSize: '0.8125rem' }}>จำนวนสมาชิก</td><td><span className="badge badge-success">{familyHeadDetail.memberEmailsList?.length || 0}/5 คน</span></td></tr>
+                                            <tr>
+                                                <td style={{ fontWeight: 600, color: 'var(--text-secondary)', width: '120px', padding: '0.5rem 0', fontSize: '0.8125rem' }}>อีเมล</td>
+                                                <td className="font-semibold">{familyHeadDetail.email}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style={{ fontWeight: 600, color: 'var(--text-secondary)', padding: '0.5rem 0', fontSize: '0.8125rem' }}>ชื่อบัญชี</td>
+                                                <td>{familyHeadDetail.accountName || '-'}</td>
+                                            </tr>
+                                            <tr>
+                                                <td style={{ fontWeight: 600, color: 'var(--text-secondary)', padding: '0.5rem 0', fontSize: '0.8125rem' }}>ร้านค้า</td>
+                                                <td><span className="badge badge-neutral">{familyHeadDetail.storeName}</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td style={{ fontWeight: 600, color: 'var(--text-secondary)', padding: '0.5rem 0', fontSize: '0.8125rem' }}>จำนวนสมาชิก</td>
+                                                <td>
+                                                    <span className="badge badge-success">
+                                                        {familyHeadDetail.memberEmailsList?.length || 0}/5 คน
+                                                    </span>
+                                                </td>
+                                            </tr>
                                         </tbody>
                                     </table>
                                 </div>
+
                                 <div className="neo-card">
-                                    <h3 style={{ marginBottom: '1rem', fontSize: '1rem', fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span><i className="fa-solid fa-user-group" style={{ color: 'var(--info)', marginRight: '0.5rem' }}></i> สมาชิกในบ้าน</span>
-                                        <button className="btn btn-primary btn-sm" onClick={() => { setShowDetailModal(false); setTimeout(() => openAddMember(selectedHead), 300); }} disabled={(familyHeadDetail.memberEmailsList?.length || 0) >= 5}><i className="fa-solid fa-plus"></i> เพิ่ม</button>
+                                    <h3 style={{
+                                        marginBottom: '1rem',
+                                        fontSize: '1rem',
+                                        fontWeight: 600,
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                    }}>
+                                        <span>
+                                            <i className="fa-solid fa-user-group" style={{ color: 'var(--info)', marginRight: '0.5rem' }}></i>
+                                            สมาชิกในบ้าน
+                                        </span>
+                                        <button
+                                            className="btn btn-primary btn-sm"
+                                            onClick={() => {
+                                                setShowDetailModal(false);
+                                                setTimeout(() => openAddMember(selectedHead), 300);
+                                            }}
+                                            disabled={(familyHeadDetail.memberEmailsList?.length || 0) >= 5}
+                                        >
+                                            <i className="fa-solid fa-plus"></i> เพิ่ม
+                                        </button>
                                     </h3>
+
                                     {familyHeadDetail.memberEmailsList && familyHeadDetail.memberEmailsList.length > 0 ? (
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                             {familyHeadDetail.memberEmailsList.map((email, idx) => (
-                                                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
+                                                <div key={idx} style={{
+                                                    display: 'flex',
+                                                    justifyContent: 'space-between',
+                                                    alignItems: 'center',
+                                                    padding: '0.75rem 1rem',
+                                                    background: 'var(--bg-tertiary)',
+                                                    borderRadius: 'var(--radius-md)',
+                                                    border: '1px solid var(--border-color)',
+                                                }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-                                                        <div style={{ width: '2rem', height: '2rem', borderRadius: '50%', background: 'var(--active-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 600, color: 'var(--accent)', flexShrink: 0 }}>{email.charAt(0).toUpperCase()}</div>
-                                                        <div><div style={{ fontWeight: 500, fontSize: '0.875rem' }}>{email}</div><div className="text-xs text-muted">สมาชิกคนที่ {idx + 1}</div></div>
+                                                        <div style={{
+                                                            width: '2rem',
+                                                            height: '2rem',
+                                                            borderRadius: '50%',
+                                                            background: 'var(--active-bg)',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            fontSize: '0.75rem',
+                                                            fontWeight: 600,
+                                                            color: 'var(--accent)',
+                                                            flexShrink: 0,
+                                                        }}>
+                                                            {email.charAt(0).toUpperCase()}
+                                                        </div>
+                                                        <div>
+                                                            <div style={{ fontWeight: 500, fontSize: '0.875rem' }}>{email}</div>
+                                                            <div className="text-xs text-muted">สมาชิกคนที่ {idx + 1}</div>
+                                                        </div>
                                                     </div>
-                                                    <button className="btn btn-danger btn-sm" onClick={() => handleRemoveMember(email)} title="ลบสมาชิก"><i className="fa-solid fa-user-minus"></i></button>
+                                                    <button
+                                                        className="btn btn-danger btn-sm"
+                                                        onClick={() => handleRemoveMember(email)}
+                                                        title="ลบสมาชิก"
+                                                    >
+                                                        <i className="fa-solid fa-user-minus"></i>
+                                                    </button>
                                                 </div>
                                             ))}
                                         </div>
                                     ) : (
-                                        <div className="empty-state" style={{ padding: '2rem 1rem' }}><i className="fa-solid fa-users-slash" style={{ fontSize: '2rem' }}></i><p className="text-sm">ไม่มีสมาชิกในบ้านนี้</p></div>
+                                        <div className="empty-state" style={{ padding: '2rem 1rem' }}>
+                                            <i className="fa-solid fa-users-slash" style={{ fontSize: '2rem' }}></i>
+                                            <p className="text-sm">ไม่มีสมาชิกในบ้านนี้</p>
+                                        </div>
                                     )}
+
                                     {(familyHeadDetail.memberEmailsList?.length || 0) < 5 && (
-                                        <div style={{ marginTop: '1rem' }}><div style={{ padding: '0.625rem 0.875rem', background: 'var(--info-light)', borderRadius: 'var(--radius-md)', fontSize: '0.75rem', color: 'var(--text-secondary)' }}><i className="fa-solid fa-info-circle" style={{ color: 'var(--info)', marginRight: '0.375rem' }}></i> สามารถเพิ่มสมาชิกได้อีก {5 - (familyHeadDetail.memberEmailsList?.length || 0)} คน</div></div>
+                                        <div style={{ marginTop: '1rem' }}>
+                                            <div style={{
+                                                padding: '0.625rem 0.875rem',
+                                                background: 'var(--info-light)',
+                                                borderRadius: 'var(--radius-md)',
+                                                fontSize: '0.75rem',
+                                                color: 'var(--text-secondary)',
+                                            }}>
+                                                <i className="fa-solid fa-info-circle" style={{ color: 'var(--info)', marginRight: '0.375rem' }}></i>
+                                                สามารถเพิ่มสมาชิกได้อีก {5 - (familyHeadDetail.memberEmailsList?.length || 0)} คน
+                                            </div>
+                                        </div>
                                     )}
                                 </div>
-                                <div className="modal-actions"><button className="btn btn-secondary" onClick={() => setShowDetailModal(false)}><i className="fa-solid fa-xmark"></i> ปิด</button></div>
+
+                                <div className="modal-actions">
+                                    <button className="btn btn-secondary" onClick={() => setShowDetailModal(false)}>
+                                        <i className="fa-solid fa-xmark"></i> ปิด
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -4003,9 +4321,18 @@
 
         // ==================== MAIN APP ====================
         const App = () => {
-            const { user, theme, loading, currentPage, sidebarOpen, setSidebarOpen, toggleTheme, setCurrentPage } = useApp();
+            const {
+                user,
+                theme,
+                loading,
+                currentPage,
+                sidebarOpen,
+                setSidebarOpen,
+                toggleTheme,
+                setCurrentPage,
+            } = useApp();
 
-            // Loading screen (เฉพาะตอน login ครั้งแรก)
+            // Loading screen
             if (loading) return <LoadingScreen />;
 
             // Login screen
@@ -4025,30 +4352,53 @@
             // Main app
             const renderPage = () => {
                 switch (currentPage) {
-                    case 'dashboard': return <Dashboard />;
-                    case 'customers': return <CustomersPage />;
-                    case 'family': return <FamilyHeadsPage />;
-                    case 'check': return <CheckPage />;
-                    case 'history': return <HistoryPage />;
-                    case 'profile': return <ProfilePage />;
-                    case 'users': return user.rank === 1 ? <UsersPage /> : <Dashboard />;
-                    default: return <Dashboard />;
+                    case 'dashboard':
+                        return <Dashboard />;
+                    case 'customers':
+                        return <CustomersPage />;
+                    case 'family':
+                        return <FamilyHeadsPage />;
+                    case 'check':
+                        return <CheckPage />;
+                    case 'history':
+                        return <HistoryPage />;
+                    case 'profile':
+                        return <ProfilePage />;
+                    case 'users':
+                        return user.rank === 1 ? <UsersPage /> : <Dashboard />;
+                    default:
+                        return <Dashboard />;
                 }
             };
 
             return (
                 <div data-theme={theme}>
                     <div className="app-container">
+                        {/* Sidebar Overlay (Mobile) */}
                         {sidebarOpen && (
-                            <div onClick={() => setSidebarOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)', zIndex: 99 }} />
+                            <div
+                                onClick={() => setSidebarOpen(false)}
+                                style={{
+                                    position: 'fixed',
+                                    inset: 0,
+                                    background: 'rgba(0,0,0,0.5)',
+                                    backdropFilter: 'blur(2px)',
+                                    zIndex: 99,
+                                }}
+                            />
                         )}
 
                         <Sidebar />
 
                         <main className="main-content">
-                            <button className="mobile-menu-btn" onClick={() => setSidebarOpen(true)}>
+                            {/* Mobile Menu Button */}
+                            <button
+                                className="mobile-menu-btn"
+                                onClick={() => setSidebarOpen(true)}
+                            >
                                 <i className="fa-solid fa-bars"></i>
                             </button>
+
                             {renderPage()}
                         </main>
 
@@ -4058,6 +4408,7 @@
                     <Toast />
                     <DebugPanel />
 
+                    {/* Theme Toggle */}
                     <button className="theme-toggle" onClick={toggleTheme} title="เปลี่ยนธีม">
                         <i className={`fa-solid fa-${theme === 'dark' ? 'sun' : 'moon'}`}></i>
                     </button>
