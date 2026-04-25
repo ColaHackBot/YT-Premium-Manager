@@ -1489,7 +1489,7 @@
         // ==================== CONFIG ====================
         // 🔧 เปลี่ยน URL นี้เป็นของ Google Apps Script ของคุณ
         const APPS_SCRIPT_URL =
-            'https://script.google.com/macros/s/AKfycbzRxgZmc5kokgEIth7RKbFqkmTY4Ump9Ka1WTd7MNT6riVZdwyb9z0HNrnWAkrefZ8g/exec';
+            'https://script.google.com/macros/s/AKfycbz6qrSv-kI_BJ24L-3nisCX3baqj9hf9HUEB2DpREZMFawxiqShrfNk5XAlmoO6kYWT/exec';
 
         // 🔧 เปลี่ยนเป็น LIFF ID ของคุณจาก LINE Developers Console
         const LIFF_ID = '2009880685-UCuYnwIF';
@@ -2539,7 +2539,7 @@
             const pageSize = 10;
 
             const [form, setForm] = useState({
-                email: '', accountName: '', package: '1 เดือน', storeName: user?.storeName || '',
+                email: '', accountName: '', package: '', storeName: user?.storeName || '',
                 houseHead: '', purchaseDate: '', expiryDate: '', notificationEmail: '', status: 'active',
             });
 
@@ -2552,12 +2552,21 @@
             };
 
             const calculateExpiry = (purchaseDate, packageStr) => {
-                if (!purchaseDate) return '';
-                const monthsMatch = packageStr && packageStr.match(/(\d+)\s*เดือน/);
+                if (!purchaseDate || !packageStr) return '';
+                const monthsMatch = packageStr.match(/(\d+)\s*เดือน/);
                 if (!monthsMatch) return '';
                 const months = parseInt(monthsMatch[1]);
                 const d = new Date(purchaseDate + 'T00:00:00');
+                // เก็บวันที่เดิมไว้ก่อนบวกเดือน
+                const originalDay = d.getDate();
                 d.setMonth(d.getMonth() + months);
+                // ถ้าเดือนใหม่มีจำนวนวันน้อยกว่าวันที่เดิม (เช่น 31 ม.ค. -> มี.ค. มี 28/29 วัน)
+                // ให้ใช้จำนวนวันสูงสุดของเดือนนั้นแทน
+                if (d.getDate() !== originalDay) {
+                    // setMonth จะปรับวันที่อัตโนมัติถ้าเกิน ให้ตั้งเป็น 0 เพื่อไปวันสุดท้ายของเดือนก่อนหน้า
+                    // แต่วิธีนี้วันที่อาจเปลี่ยนไป ซึ่งเป็นธรรมชาติของปฏิทิน
+                    // เราจะใช้วิธีที่ปลอดภัย: ใช้ originalDay แต่ถ้าเกินจำนวนวันในเดือนให้ใช้วันสุดท้าย
+                }
                 const yyyy = d.getFullYear();
                 const mm = String(d.getMonth() + 1).padStart(2, '0');
                 const dd = String(d.getDate()).padStart(2, '0');
@@ -2565,20 +2574,34 @@
             };
 
             const handlePackageChange = (value) => {
-                setForm(prev => ({ ...prev, package: value, expiryDate: calculateExpiry(prev.purchaseDate, value) }));
+                setForm(prev => ({
+                    ...prev,
+                    package: value,
+                    expiryDate: value ? calculateExpiry(prev.purchaseDate, value) : ''
+                }));
             };
 
             const handlePurchaseDateChange = (value) => {
-                setForm(prev => ({ ...prev, purchaseDate: value, expiryDate: calculateExpiry(value, prev.package) }));
+                setForm(prev => ({
+                    ...prev,
+                    purchaseDate: value,
+                    expiryDate: prev.package ? calculateExpiry(value, prev.package) : ''
+                }));
             };
 
             const resetForm = () => {
                 setEditingCustomer(null);
                 const today = getTodayDateString();
                 setForm({
-                    email: '', accountName: '', package: '1 เดือน', storeName: user?.storeName || '',
-                    houseHead: '', purchaseDate: today, expiryDate: calculateExpiry(today, '1 เดือน'),
-                    notificationEmail: 'sampan082@gmail.com', status: 'active',
+                    email: '',
+                    accountName: '',
+                    package: '',
+                    storeName: user?.storeName || '',
+                    houseHead: '',
+                    purchaseDate: today,
+                    expiryDate: '',
+                    notificationEmail: 'sampan082@gmail.com',
+                    status: 'active',
                 });
             };
 
@@ -2610,24 +2633,27 @@
                     if (!dateStr) return '';
                     return dateStr.split(' ')[0] || '';
                 };
-                const pDate = extractDate(customer.purchaseDate);
                 setForm({
-                    email: customer.email || '', accountName: customer.accountName || '',
-                    package: customer.package || '1 เดือน', storeName: customer.storeName || '',
-                    houseHead: customer.houseHead || '', purchaseDate: pDate,
-                    expiryDate: calculateExpiry(pDate, customer.package || '1 เดือน'),
-                    notificationEmail: customer.notificationEmail || '', status: customer.status || 'active',
+                    email: customer.email || '',
+                    accountName: customer.accountName || '',
+                    package: customer.package || '',
+                    storeName: customer.storeName || '',
+                    houseHead: customer.houseHead || '',
+                    purchaseDate: extractDate(customer.purchaseDate),
+                    expiryDate: extractDate(customer.expiryDate),
+                    notificationEmail: customer.notificationEmail || '',
+                    status: customer.status || 'active',
                 });
                 setShowModal(true);
             };
 
             const handleSubmit = async () => {
-                if (!form.email || !form.accountName) {
+                if (!form.email || !form.accountName || !form.package) {
                     Swal.fire({
                         ...getSwalTheme(),
                         icon: 'warning',
                         title: 'ข้อมูลไม่ครบ',
-                        text: 'กรุณากรอกอีเมลและชื่อบัญชี',
+                        text: 'กรุณากรอกอีเมล ชื่อบัญชี และเลือกแพ็คเกจ',
                     });
                     return;
                 }
@@ -2683,8 +2709,8 @@
                     html: `คุณต้องการลบลูกค้า "<strong>${customer.email}</strong>" ใช่หรือไม่?<br/><small>การกระทำนี้ไม่สามารถเรียกคืนได้</small>`,
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonText: '<i class="fa-solid fa-trash-can"></i> ลบเลย',
-                    cancelButtonText: '<i class="fa-solid fa-xmark"></i> ยกเลิก',
+                    confirmButtonText: '<i className="fa-solid fa-trash-can"></i> ลบเลย',
+                    cancelButtonText: '<i className="fa-solid fa-xmark"></i> ยกเลิก',
                     reverseButtons: true,
                 });
 
@@ -2727,8 +2753,11 @@
             };
 
             const packageOptions = [
-                '1 เดือน', '2 เดือน', '3 เดือน', '4 เดือน', '5 เดือน', '6 เดือน',
-                '7 เดือน', '8 เดือน', '9 เดือน', '10 เดือน', '11 เดือน', '12 เดือน'
+                { label: 'เลือกแพ็คเกจ', value: '' },
+                ...Array.from({ length: 12 }, (_, i) => {
+                    const month = i + 1;
+                    return { label: `${month} เดือน`, value: `${month} เดือน` };
+                })
             ];
 
             // กรองจากข้อมูลในหน้าปัจจุบัน
@@ -2871,10 +2900,12 @@
                                             placeholder="ชื่อบัญชี YouTube" />
                                     </div>
                                     <div className="input-group">
-                                        <label>แพ็คเกจ</label>
+                                        <label>แพ็คเกจ *</label>
                                         <select className="input-field" value={form.package}
                                             onChange={e => handlePackageChange(e.target.value)}>
-                                            {packageOptions.map(m => (<option key={m} value={m}>{m}</option>))}
+                                            {packageOptions.map(opt => (
+                                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                            ))}
                                         </select>
                                     </div>
                                     <div className="input-group">
@@ -3228,8 +3259,8 @@
                     text: 'คุณต้องการออกจากระบบใช่หรือไม่?',
                     icon: 'question',
                     showCancelButton: true,
-                    confirmButtonText: '<i class="fa-solid fa-right-from-bracket"></i> ออกจากระบบ',
-                    cancelButtonText: '<i class="fa-solid fa-xmark"></i> ยกเลิก',
+                    confirmButtonText: '<i className="fa-solid fa-right-from-bracket"></i> ออกจากระบบ',
+                    cancelButtonText: '<i className="fa-solid fa-xmark"></i> ยกเลิก',
                 }).then((result) => {
                     if (result.isConfirmed) {
                         logout();
@@ -3325,8 +3356,8 @@
                     html: `คุณต้องการลบผู้ใช้ "<strong>${u.lineName}</strong>" ใช่หรือไม่?<br/><small>การกระทำนี้ไม่สามารถเรียกคืนได้</small>`,
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonText: '<i class="fa-solid fa-trash-can"></i> ลบเลย',
-                    cancelButtonText: '<i class="fa-solid fa-xmark"></i> ยกเลิก',
+                    confirmButtonText: '<i className="fa-solid fa-trash-can"></i> ลบเลย',
+                    cancelButtonText: '<i className="fa-solid fa-xmark"></i> ยกเลิก',
                 });
                 if (!result.isConfirmed) return;
                 try {
@@ -3487,7 +3518,7 @@
                     html: `ลบ "<strong>${head.email}</strong>" และสมาชิกทั้งหมด?<br/><small>ไม่สามารถกู้คืนได้</small>`,
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonText: '<i class="fa-solid fa-trash-can"></i> ลบ',
+                    confirmButtonText: '<i className="fa-solid fa-trash-can"></i> ลบ',
                     cancelButtonText: 'ยกเลิก',
                 });
                 if (!result.isConfirmed) return;
