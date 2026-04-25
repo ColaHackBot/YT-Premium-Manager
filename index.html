@@ -8,7 +8,7 @@
     <meta name="theme-color" content="#0f172a">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="description" content="ระบบจัดการการต่ออายุ YouTube Premium">
+    <meta name="description" content="ระบบจัดการการต่ออายุ YouTube Premium พร้อม LINE OA">
     <title>YT Premium Manager</title>
 
     <!-- Fonts -->
@@ -61,7 +61,7 @@
             --border-color: rgba(161, 161, 170, 0.1);
             --border-accent: rgba(250, 250, 250, 0.15);
             --accent: #ef4444;
-            --accent-hover: #e4e4e7;
+            --accent-hover: #dc2626;
             --accent-light: rgba(250, 250, 250, 0.08);
             --accent-glow: rgba(250, 250, 250, 0.1);
             --danger: #ef4444;
@@ -1489,7 +1489,7 @@
         // ==================== CONFIG ====================
         // 🔧 เปลี่ยน URL นี้เป็นของ Google Apps Script ของคุณ
         const APPS_SCRIPT_URL =
-            'https://script.google.com/macros/s/AKfycbz6qrSv-kI_BJ24L-3nisCX3baqj9hf9HUEB2DpREZMFawxiqShrfNk5XAlmoO6kYWT/exec';
+            'https://script.google.com/macros/s/AKfycbwsyD1FohZu8hP8D_f4CvDMSPP59aH0G9PgwXtlHDjkOphd1jNm4kdOOywru7yNpFpI/exec';
 
         // 🔧 เปลี่ยนเป็น LIFF ID ของคุณจาก LINE Developers Console
         const LIFF_ID = '2009880685-UCuYnwIF';
@@ -1543,12 +1543,10 @@
         const formatDisplayDate = (dateStr) => {
             if (!dateStr) return '-';
             try {
-                // ถ้าเป็น string ที่มีรูปแบบ YYYY-MM-DD HH:mm:ss
                 const parts = dateStr.split(' ')[0].split('-');
                 if (parts.length === 3) {
                     return parts[2] + '/' + parts[1] + '/' + parts[0] + ' 00:00:00';
                 }
-                // ถ้าเป็นรูปแบบอื่น ลอง parse
                 const d = new Date(dateStr);
                 if (!isNaN(d.getTime())) {
                     const dd = String(d.getDate()).padStart(2, '0');
@@ -2540,7 +2538,8 @@
 
             const [form, setForm] = useState({
                 email: '', accountName: '', package: '', storeName: user?.storeName || '',
-                houseHead: '', purchaseDate: '', expiryDate: '', notificationEmail: '', status: 'active',
+                houseHead: '', purchaseDate: '', expiryDate: '', notificationEmail: 'sampan082@gmail.com',
+                lineUserId: '', status: 'active',
             });
 
             const getTodayDateString = () => {
@@ -2551,29 +2550,23 @@
                 return `${yyyy}-${mm}-${dd}`;
             };
 
-            // ✅ ฟังก์ชัน calculateExpiry ที่แก้ไขแล้ว: วันจะไม่เปลี่ยนเกินจริง
             const calculateExpiry = (purchaseDate, packageStr) => {
                 if (!purchaseDate || !packageStr) return '';
                 const monthsMatch = packageStr.match(/(\d+)\s*เดือน/);
                 if (!monthsMatch) return '';
                 const months = parseInt(monthsMatch[1]);
 
-                // แยกปี-เดือน-วันจาก purchaseDate (รูป YYYY-MM-DD)
                 const [year, month, day] = purchaseDate.split('-').map(Number);
                 const originalDay = day;
 
-                // คำนวณเดือนและปีปลายทาง (0-based)
                 let targetMonth = month - 1 + months;
                 let targetYear = year + Math.floor(targetMonth / 12);
                 targetMonth = targetMonth % 12;
 
-                // หาจำนวนวันสูงสุดของเดือนปลายทาง
                 const lastDayOfTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
 
-                // วันที่ใหม่ = min(วันเดิม, จำนวนวันสูงสุดในเดือนนั้น)
                 const newDay = Math.min(originalDay, lastDayOfTargetMonth);
 
-                // จัดรูปแบบ YYYY-MM-DD
                 const mm = String(targetMonth + 1).padStart(2, '0');
                 const dd = String(newDay).padStart(2, '0');
                 return `${targetYear}-${mm}-${dd}`;
@@ -2607,6 +2600,7 @@
                     purchaseDate: today,
                     expiryDate: '',
                     notificationEmail: 'sampan082@gmail.com',
+                    lineUserId: '',
                     status: 'active',
                 });
             };
@@ -2648,6 +2642,7 @@
                     purchaseDate: extractDate(customer.purchaseDate),
                     expiryDate: extractDate(customer.expiryDate),
                     notificationEmail: customer.notificationEmail || '',
+                    lineUserId: customer.lineUserId || '',
                     status: customer.status || 'active',
                 });
                 setShowModal(true);
@@ -2715,8 +2710,8 @@
                     html: `คุณต้องการลบลูกค้า "<strong>${customer.email}</strong>" ใช่หรือไม่?<br/><small>การกระทำนี้ไม่สามารถเรียกคืนได้</small>`,
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonText: '<i className="fa-solid fa-trash-can"></i> ลบเลย',
-                    cancelButtonText: '<i className="fa-solid fa-xmark"></i> ยกเลิก',
+                    confirmButtonText: '<i class="fa-solid fa-trash-can"></i> ลบเลย',
+                    cancelButtonText: '<i class="fa-solid fa-xmark"></i> ยกเลิก',
                     reverseButtons: true,
                 });
 
@@ -2733,6 +2728,62 @@
                         showConfirmButton: false,
                     });
                     loadCustomers(page);
+                } catch (e) {
+                    Swal.fire({
+                        ...getSwalTheme(),
+                        icon: 'error',
+                        title: 'เกิดข้อผิดพลาด',
+                        text: e.message,
+                    });
+                }
+            };
+
+            // ✨ ฟังก์ชันส่งข้อความ LINE ทดสอบ
+            const handleSendLineTest = async (customer) => {
+                if (!customer.lineUserId) {
+                    Swal.fire({
+                        ...getSwalTheme(),
+                        icon: 'warning',
+                        title: 'ไม่มี LINE User ID',
+                        text: 'ลูกค้านี้ยังไม่มี LINE User ID กรุณาอัปเดตก่อนส่งข้อความ',
+                    });
+                    return;
+                }
+
+                const result = await Swal.fire({
+                    ...getSwalTheme(),
+                    title: '📨 ส่งข้อความ LINE',
+                    html: `ส่งข้อความแจ้งเตือนไปยัง <strong>${customer.email}</strong>?`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="fa-brands fa-line"></i> ส่งเลย',
+                    cancelButtonText: 'ยกเลิก',
+                });
+
+                if (!result.isConfirmed) return;
+
+                try {
+                    const data = await callAPI('sendLineNotification', {
+                        customerId: customer.id || customer._id
+                    });
+
+                    if (data.success) {
+                        Swal.fire({
+                            ...getSwalTheme(),
+                            icon: 'success',
+                            title: 'ส่งข้อความ LINE สำเร็จ',
+                            html: `ส่งไปยัง LINE User ID: ${customer.lineUserId}`,
+                            timer: 3000,
+                            showConfirmButton: false,
+                        });
+                    } else {
+                        Swal.fire({
+                            ...getSwalTheme(),
+                            icon: 'error',
+                            title: 'ส่งไม่สำเร็จ',
+                            text: data.lineResult?.body || 'เกิดข้อผิดพลาดในการส่ง',
+                        });
+                    }
                 } catch (e) {
                     Swal.fire({
                         ...getSwalTheme(),
@@ -2766,7 +2817,6 @@
                 })
             ];
 
-            // กรองจากข้อมูลในหน้าปัจจุบัน
             const displayedCustomers = search.trim()
                 ? paginatedCustomers.filter(c =>
                     (c.email || '').toLowerCase().includes(search.toLowerCase()) ||
@@ -2824,6 +2874,7 @@
                                                 <th>วันที่ซื้อ</th>
                                                 <th>วันหมดอายุ</th>
                                                 <th>คงเหลือ</th>
+                                                <th>LINE</th>
                                                 <th>จัดการ</th>
                                             </tr>
                                         </thead>
@@ -2855,7 +2906,23 @@
                                                             <td className="text-sm font-semibold">{formatDisplayDate(c.expiryDate)}</td>
                                                             <td><span className={`badge ${statusBadge.className}`}>{statusBadge.text}</span></td>
                                                             <td>
-                                                                <div style={{ display: 'flex', gap: '4px' }}>
+                                                                {c.lineUserId ? (
+                                                                    <span className="badge badge-success" title={c.lineUserId}>
+                                                                        <i className="fa-brands fa-line"></i> เชื่อมแล้ว
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="badge badge-neutral" title="ยังไม่ได้เชื่อม LINE OA">
+                                                                        <i className="fa-solid fa-circle-xmark"></i> ยังไม่เชื่อม
+                                                                    </span>
+                                                                )}
+                                                            </td>
+                                                            <td>
+                                                                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                                                                    {c.lineUserId && (
+                                                                        <button className="btn btn-success btn-sm" onClick={() => handleSendLineTest(c)} title="ส่งข้อความ LINE">
+                                                                            <i className="fa-brands fa-line"></i>
+                                                                        </button>
+                                                                    )}
                                                                     <button className="btn btn-secondary btn-sm" onClick={() => openEdit(c)} title="แก้ไข">
                                                                         <i className="fa-solid fa-pen-to-square"></i>
                                                                     </button>
@@ -2869,7 +2936,7 @@
                                                 })
                                             ) : (
                                                 <tr>
-                                                    <td colSpan="9">
+                                                    <td colSpan="10">
                                                         <div className="empty-state">
                                                             <i className="fa-solid fa-users-slash"></i>
                                                             <p>{search ? 'ไม่พบข้อมูลที่ค้นหา' : 'ไม่มีข้อมูลลูกค้า'}</p>
@@ -2941,6 +3008,19 @@
                                         <input className="input-field" type="email" value={form.notificationEmail}
                                             onChange={e => setForm({ ...form, notificationEmail: e.target.value })}
                                             placeholder="email@example.com" />
+                                    </div>
+                                    {/* ✨ เพิ่มฟิลด์ LINE User ID */}
+                                    <div className="input-group">
+                                        <label>
+                                            <i className="fa-brands fa-line" style={{ color: '#06C755', marginRight: '0.25rem' }}></i>
+                                            LINE User ID
+                                        </label>
+                                        <input className="input-field" value={form.lineUserId}
+                                            onChange={e => setForm({ ...form, lineUserId: e.target.value })}
+                                            placeholder="Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
+                                        <div style={{ fontSize: '0.6875rem', color: 'var(--text-tertiary)', marginTop: '0.25rem' }}>
+                                            <i className="fa-solid fa-circle-info"></i> สำหรับส่งแจ้งเตือนผ่าน LINE OA (ต้องเป็นเพื่อนกับ OA ก่อน)
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="modal-actions">
@@ -3126,6 +3206,7 @@
                     'removeMemberFromFamily': '➖ ลบสมาชิกบ้าน',
                     'getFamilyHeadDetail': '🔍 ดูรายละเอียดหัวบ้าน',
                     'getUserProfile': '👤 ดูโปรไฟล์',
+                    'sendLineNotification': '📨 ส่งข้อความ LINE',
                 };
                 return map[action] || `📌 ${action}`;
             };
@@ -3150,6 +3231,7 @@
                 if (action.includes('update')) return 'fa-pen-to-square';
                 if (action.includes('delete') || action.includes('remove')) return 'fa-trash-can';
                 if (action.includes('login') || action === 'loginOrRegister') return 'fa-right-to-bracket';
+                if (action.includes('sendLine')) return 'fa-paper-plane';
                 return 'fa-circle-info';
             };
 
@@ -3158,6 +3240,7 @@
                 if (action.includes('update')) return 'var(--info)';
                 if (action.includes('delete') || action.includes('remove')) return 'var(--danger)';
                 if (action.includes('login') || action === 'loginOrRegister') return 'var(--warning)';
+                if (action.includes('sendLine')) return '#06C755';
                 return 'var(--text-secondary)';
             };
 
@@ -3167,6 +3250,7 @@
                 if (filter === 'edit') return log.action.includes('update');
                 if (filter === 'delete') return log.action.includes('delete') || log.action.includes('remove');
                 if (filter === 'login') return log.action === 'loginOrRegister' || log.action === 'login';
+                if (filter === 'line') return log.action.includes('sendLine');
                 return true;
             });
 
@@ -3187,10 +3271,17 @@
 
                     <div className="glass-card" style={{ marginBottom: '1rem', padding: '0.75rem 1rem' }}>
                         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                            {['all', 'add', 'edit', 'delete', 'login'].map(f => (
-                                <button key={f} className={`btn btn-sm ${filter === f ? 'btn-primary' : 'btn-secondary'}`}
-                                    onClick={() => { setFilter(f); setPage(1); }}>
-                                    {f === 'all' ? '📋 ทั้งหมด' : f === 'add' ? '➕ เพิ่ม' : f === 'edit' ? '✏️ แก้ไข' : f === 'delete' ? '🗑️ ลบ' : '🔑 เข้าสู่ระบบ'}
+                            {[
+                                { id: 'all', label: '📋 ทั้งหมด' },
+                                { id: 'add', label: '➕ เพิ่ม' },
+                                { id: 'edit', label: '✏️ แก้ไข' },
+                                { id: 'delete', label: '🗑️ ลบ' },
+                                { id: 'login', label: '🔑 เข้าสู่ระบบ' },
+                                { id: 'line', label: '📨 ส่ง LINE' },
+                            ].map(f => (
+                                <button key={f.id} className={`btn btn-sm ${filter === f.id ? 'btn-primary' : 'btn-secondary'}`}
+                                    onClick={() => { setFilter(f.id); setPage(1); }}>
+                                    {f.label}
                                 </button>
                             ))}
                         </div>
@@ -3265,8 +3356,8 @@
                     text: 'คุณต้องการออกจากระบบใช่หรือไม่?',
                     icon: 'question',
                     showCancelButton: true,
-                    confirmButtonText: '<i className="fa-solid fa-right-from-bracket"></i> ออกจากระบบ',
-                    cancelButtonText: '<i className="fa-solid fa-xmark"></i> ยกเลิก',
+                    confirmButtonText: '<i class="fa-solid fa-right-from-bracket"></i> ออกจากระบบ',
+                    cancelButtonText: '<i class="fa-solid fa-xmark"></i> ยกเลิก',
                 }).then((result) => {
                     if (result.isConfirmed) {
                         logout();
@@ -3362,8 +3453,8 @@
                     html: `คุณต้องการลบผู้ใช้ "<strong>${u.lineName}</strong>" ใช่หรือไม่?<br/><small>การกระทำนี้ไม่สามารถเรียกคืนได้</small>`,
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonText: '<i className="fa-solid fa-trash-can"></i> ลบเลย',
-                    cancelButtonText: '<i className="fa-solid fa-xmark"></i> ยกเลิก',
+                    confirmButtonText: '<i class="fa-solid fa-trash-can"></i> ลบเลย',
+                    cancelButtonText: '<i class="fa-solid fa-xmark"></i> ยกเลิก',
                 });
                 if (!result.isConfirmed) return;
                 try {
@@ -3524,7 +3615,7 @@
                     html: `ลบ "<strong>${head.email}</strong>" และสมาชิกทั้งหมด?<br/><small>ไม่สามารถกู้คืนได้</small>`,
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonText: '<i className="fa-solid fa-trash-can"></i> ลบ',
+                    confirmButtonText: '<i class="fa-solid fa-trash-can"></i> ลบ',
                     cancelButtonText: 'ยกเลิก',
                 });
                 if (!result.isConfirmed) return;
