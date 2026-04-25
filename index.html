@@ -8,7 +8,7 @@
     <meta name="theme-color" content="#0f172a">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="description" content="ระบบจัดการการต่ออายุ YouTube Premium พร้อม LINE OA">
+    <meta name="description" content="ระบบจัดการการต่ออายุ YouTube Premium">
     <title>YT Premium Manager</title>
 
     <!-- Fonts -->
@@ -62,8 +62,8 @@
             --border-accent: rgba(250, 250, 250, 0.15);
             --accent: #ef4444;
             --accent-hover: #dc2626;
-            --accent-light: rgba(250, 250, 250, 0.08);
-            --accent-glow: rgba(250, 250, 250, 0.1);
+            --accent-light: rgba(239, 68, 68, 0.1);
+            --accent-glow: rgba(239, 68, 68, 0.2);
             --danger: #ef4444;
             --danger-hover: #dc2626;
             --danger-light: rgba(239, 68, 68, 0.1);
@@ -77,7 +77,7 @@
             --sidebar-bg: #09090b;
             --input-bg: #18181b;
             --hover-bg: rgba(250, 250, 250, 0.04);
-            --active-bg: rgba(250, 250, 250, 0.06);
+            --active-bg: rgba(239, 68, 68, 0.1);
             --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
             --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
             --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
@@ -284,14 +284,14 @@
             height: 2.5rem;
             border-radius: 50%;
             overflow: hidden;
-            background: var(--active-bg);
+            background: var(--accent-light);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 1rem;
-            color: var(--text-secondary);
+            color: var(--accent);
             flex-shrink: 0;
-            border: 2px solid var(--border-color);
+            border: 2px solid var(--border-accent);
         }
 
         .user-avatar img {
@@ -1489,10 +1489,13 @@
         // ==================== CONFIG ====================
         // 🔧 เปลี่ยน URL นี้เป็นของ Google Apps Script ของคุณ
         const APPS_SCRIPT_URL =
-            'https://script.google.com/macros/s/AKfycbwsyD1FohZu8hP8D_f4CvDMSPP59aH0G9PgwXtlHDjkOphd1jNm4kdOOywru7yNpFpI/exec';
+            'https://script.google.com/macros/s/AKfycbwh1xJFc-qDvv3bqKr4Nt1fe-zC8exdw7uRO_oL7fDrHHec35DNAlM-hC_3sVgxtFmp/exec';
 
         // 🔧 เปลี่ยนเป็น LIFF ID ของคุณจาก LINE Developers Console
         const LIFF_ID = '2009880685-UCuYnwIF';
+
+        // 🔧 LINE OA Link (ให้ผู้ใช้สามารถแอด LINE OA ได้)
+        const LINE_OA_LINK = 'https://lin.ee/Toaxx8d'; // เปลี่ยนเป็นลิงก์ LINE OA ของคุณ
 
         // ==================== SWEETALERT2 HELPER ====================
         const getSwalTheme = () => {
@@ -1543,10 +1546,12 @@
         const formatDisplayDate = (dateStr) => {
             if (!dateStr) return '-';
             try {
+                // ถ้าเป็น string ที่มีรูปแบบ YYYY-MM-DD HH:mm:ss
                 const parts = dateStr.split(' ')[0].split('-');
                 if (parts.length === 3) {
                     return parts[2] + '/' + parts[1] + '/' + parts[0] + ' 00:00:00';
                 }
+                // ถ้าเป็นรูปแบบอื่น ลอง parse
                 const d = new Date(dateStr);
                 if (!isNaN(d.getTime())) {
                     const dd = String(d.getDate()).padStart(2, '0');
@@ -1576,6 +1581,11 @@
                     addDebugLog('LIFF initialized successfully', 'success');
                     addDebugLog(`LIFF Version: ${liff.getVersion()}`, 'info');
                     addDebugLog(`Is logged in: ${liff.isLoggedIn()}`, 'info');
+
+                    // ตรวจสอบ LIFF permissions
+                    const context = liff.getContext();
+                    addDebugLog(`LIFF Context: ${JSON.stringify(context)}`, 'info');
+
                     return true;
                 } catch (error) {
                     addDebugLog(`LIFF initialization failed: ${error.message}`, 'error');
@@ -1600,8 +1610,18 @@
                     addDebugLog('Getting LINE profile...', 'info');
                     const profile = await liff.getProfile();
                     addDebugLog(`Profile received: userId=${profile.userId}, name=${profile.displayName}`, 'success');
+
                     const idToken = liff.getIDToken();
                     addDebugLog(`ID Token: ${idToken ? idToken.substring(0, 50) + '...' : 'null'}`, 'info');
+
+                    // ดึง friendship status (เช็คว่าเป็นเพื่อนกับ OA หรือยัง)
+                    try {
+                        const friendship = await liff.getFriendship();
+                        addDebugLog(`Friendship status: ${JSON.stringify(friendship)}`, 'info');
+                    } catch (e) {
+                        addDebugLog(`Cannot get friendship status: ${e.message}`, 'warning');
+                    }
+
                     return {
                         userId: profile.userId,
                         displayName: profile.displayName,
@@ -1653,7 +1673,7 @@
                                 if (profile) {
                                     await registerOrLoginUser(profile);
                                 } else {
-                                    setInitError('Cannot load LINE profile');
+                                    setInitError('ไม่สามารถโหลดโปรไฟล์ LINE ได้');
                                     setLoading(false);
                                 }
                             } else {
@@ -1693,12 +1713,14 @@
                         storeName: user?.storeName || 'My Shop',
                         ...params
                     };
+                    addDebugLog(`Calling API: ${action}`, 'info');
                     const payload = encodeURIComponent(JSON.stringify(requestData));
                     const url = `${APPS_SCRIPT_URL}?payload=${payload}`;
                     const response = await fetch(url, { method: 'GET' });
                     if (!response.ok) throw new Error(`HTTP ${response.status}`);
                     const data = await response.json();
                     if (data.error) throw new Error(data.message || data.error);
+                    addDebugLog(`API Response (${action}): success`, 'success');
                     return data;
                 } catch (error) {
                     addDebugLog(`API Error (${action}): ${error.message}`, 'error');
@@ -1784,6 +1806,7 @@
                 initError,
                 toast,
                 setToast,
+                LINE_OA_LINK,
             };
 
             return (
@@ -1991,7 +2014,7 @@
 
         // ==================== LOGIN PAGE ====================
         const LoginPage = () => {
-            const { loginWithLine, liffReady, initError } = useApp();
+            const { loginWithLine, liffReady, initError, LINE_OA_LINK } = useApp();
 
             return (
                 <div className="login-container">
@@ -2008,10 +2031,32 @@
                                 <p className="text-sm text-muted">กำลังเชื่อมต่อกับ LINE...</p>
                             </div>
                         ) : (
-                            <button className="btn btn-line" onClick={loginWithLine} disabled={!liffReady}>
-                                <i className="fa-brands fa-line"></i>
-                                {liffReady ? 'เข้าสู่ระบบด้วย LINE' : 'กำลังเชื่อมต่อ...'}
-                            </button>
+                            <>
+                                <button className="btn btn-line" onClick={loginWithLine} disabled={!liffReady}>
+                                    <i className="fa-brands fa-line"></i>
+                                    {liffReady ? 'เข้าสู่ระบบด้วย LINE' : 'กำลังเชื่อมต่อ...'}
+                                </button>
+
+                                <div style={{ marginTop: '1rem' }}>
+                                    <a
+                                        href={LINE_OA_LINK}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: '0.5rem',
+                                            color: '#06C755',
+                                            textDecoration: 'none',
+                                            fontSize: '0.875rem',
+                                            fontWeight: 600,
+                                        }}
+                                    >
+                                        <i className="fa-solid fa-comment-dots"></i>
+                                        แอด LINE OA เพื่อเช็คข้อมูล
+                                    </a>
+                                </div>
+                            </>
                         )}
 
                         {initError && (
@@ -2047,7 +2092,7 @@
 
         // ==================== SIDEBAR ====================
         const Sidebar = () => {
-            const { user, currentPage, setCurrentPage, sidebarOpen, setSidebarOpen, logout } = useApp();
+            const { user, currentPage, setCurrentPage, sidebarOpen, setSidebarOpen, logout, LINE_OA_LINK } = useApp();
             const isAdmin = user?.rank === 1;
 
             const navItems = [
@@ -2058,9 +2103,14 @@
                 { id: 'history', label: 'ประวัติ', icon: 'fa-clock-rotate-left' },
                 { id: 'profile', label: 'โปรไฟล์', icon: 'fa-user-circle' },
                 ...(isAdmin ? [{ id: 'users', label: 'จัดการผู้ใช้', icon: 'fa-user-shield', admin: true }] : []),
+                { id: 'line_oa', label: 'LINE OA', icon: 'fa-comment-dots', link: LINE_OA_LINK },
             ];
 
-            const handleNavClick = (pageId) => {
+            const handleNavClick = (pageId, link) => {
+                if (link) {
+                    window.open(link, '_blank');
+                    return;
+                }
                 setCurrentPage(pageId);
                 setSidebarOpen(false);
             };
@@ -2077,7 +2127,7 @@
                             <button
                                 key={item.id}
                                 className={`nav-item ${currentPage === item.id ? 'active' : ''}`}
-                                onClick={() => handleNavClick(item.id)}
+                                onClick={() => handleNavClick(item.id, item.link)}
                             >
                                 <i className={`fa-solid ${item.icon}`}></i>
                                 <span>{item.label}</span>
@@ -2085,6 +2135,9 @@
                                     <span className="badge badge-danger" style={{ marginLeft: 'auto', fontSize: '0.5625rem', padding: '0.125rem 0.375rem' }}>
                                         ADMIN
                                     </span>
+                                )}
+                                {item.link && (
+                                    <i className="fa-solid fa-arrow-up-right-from-square" style={{ marginLeft: 'auto', fontSize: '0.625rem', opacity: 0.5 }}></i>
                                 )}
                             </button>
                         ))}
@@ -2131,7 +2184,7 @@
 
         // ==================== BOTTOM NAV ====================
         const BottomNav = () => {
-            const { currentPage, setCurrentPage, user } = useApp();
+            const { currentPage, setCurrentPage, user, LINE_OA_LINK } = useApp();
             const isAdmin = user?.rank === 1;
 
             const items = [
@@ -2163,7 +2216,7 @@
 
         // ==================== DASHBOARD PAGE ====================
         const Dashboard = () => {
-            const { user, callAPI } = useApp();
+            const { user, callAPI, LINE_OA_LINK } = useApp();
             const [stats, setStats] = useState(null);
             const [loading, setLoading] = useState(true);
             const barChartRef = useRef(null);
@@ -2197,6 +2250,7 @@
                     const ctx = barChartRef.current.getContext('2d');
                     const labels = Object.keys(packageCounts);
                     const dataValues = Object.values(packageCounts);
+
                     const gradient = ctx.createLinearGradient(0, 0, 0, 300);
                     gradient.addColorStop(0, 'rgba(239, 68, 68, 0.8)');
                     gradient.addColorStop(1, 'rgba(239, 68, 68, 0.05)');
@@ -2348,6 +2402,9 @@
                             <span className="icon"><i className="fa-solid fa-chart-pie"></i></span> แดชบอร์ด
                         </h1>
                         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                            <a href={LINE_OA_LINK} target="_blank" rel="noopener noreferrer" className="btn btn-success btn-sm">
+                                <i className="fa-brands fa-line"></i> LINE OA
+                            </a>
                             <span className="text-sm text-muted">
                                 <i className="fa-solid fa-calendar-check"></i>{' '}
                                 {new Date().toLocaleDateString('th-TH', {
@@ -2404,6 +2461,32 @@
                             <div className="chart-container">
                                 <canvas ref={pieChartRef}></canvas>
                             </div>
+                        </div>
+                    </div>
+
+                    {/* LINE OA Promotion */}
+                    <div className="glass-card" style={{ marginBottom: '1rem', background: 'linear-gradient(135deg, rgba(6,199,85,0.1), rgba(6,199,85,0.05))' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                            <div style={{
+                                width: '3.5rem',
+                                height: '3.5rem',
+                                borderRadius: '50%',
+                                background: '#06C755',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0,
+                                boxShadow: '0 8px 24px rgba(6,199,85,0.3)'
+                            }}>
+                                <i className="fa-brands fa-line" style={{ color: 'white', fontSize: '1.5rem' }}></i>
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.25rem' }}>เช็คข้อมูลผ่าน LINE OA</h3>
+                                <p className="text-sm text-muted">แอด LINE OA แล้วพิมพ์อีเมลเพื่อเช็คข้อมูลได้ทันที ไม่ต้องเข้าสู่ระบบ!</p>
+                            </div>
+                            <a href={LINE_OA_LINK} target="_blank" rel="noopener noreferrer" className="btn btn-success">
+                                <i className="fa-solid fa-plus"></i> แอด LINE OA
+                            </a>
                         </div>
                     </div>
 
@@ -2525,7 +2608,6 @@
         // ==================== CUSTOMERS PAGE ====================
         const CustomersPage = () => {
             const { user, callAPI, showToast } = useApp();
-            const isAdmin = user?.rank === 1;
             const [search, setSearch] = useState('');
             const [showModal, setShowModal] = useState(false);
             const [editingCustomer, setEditingCustomer] = useState(null);
@@ -2538,8 +2620,7 @@
 
             const [form, setForm] = useState({
                 email: '', accountName: '', package: '', storeName: user?.storeName || '',
-                houseHead: '', purchaseDate: '', expiryDate: '', notificationEmail: 'sampan082@gmail.com',
-                lineUserId: '', status: 'active',
+                houseHead: '', purchaseDate: '', expiryDate: '', notificationEmail: '', status: 'active',
             });
 
             const getTodayDateString = () => {
@@ -2555,18 +2636,13 @@
                 const monthsMatch = packageStr.match(/(\d+)\s*เดือน/);
                 if (!monthsMatch) return '';
                 const months = parseInt(monthsMatch[1]);
-
                 const [year, month, day] = purchaseDate.split('-').map(Number);
                 const originalDay = day;
-
                 let targetMonth = month - 1 + months;
                 let targetYear = year + Math.floor(targetMonth / 12);
                 targetMonth = targetMonth % 12;
-
                 const lastDayOfTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
-
                 const newDay = Math.min(originalDay, lastDayOfTargetMonth);
-
                 const mm = String(targetMonth + 1).padStart(2, '0');
                 const dd = String(newDay).padStart(2, '0');
                 return `${targetYear}-${mm}-${dd}`;
@@ -2600,7 +2676,6 @@
                     purchaseDate: today,
                     expiryDate: '',
                     notificationEmail: 'sampan082@gmail.com',
-                    lineUserId: '',
                     status: 'active',
                 });
             };
@@ -2642,7 +2717,6 @@
                     purchaseDate: extractDate(customer.purchaseDate),
                     expiryDate: extractDate(customer.expiryDate),
                     notificationEmail: customer.notificationEmail || '',
-                    lineUserId: customer.lineUserId || '',
                     status: customer.status || 'active',
                 });
                 setShowModal(true);
@@ -2738,62 +2812,6 @@
                 }
             };
 
-            // ✨ ฟังก์ชันส่งข้อความ LINE ทดสอบ
-            const handleSendLineTest = async (customer) => {
-                if (!customer.lineUserId) {
-                    Swal.fire({
-                        ...getSwalTheme(),
-                        icon: 'warning',
-                        title: 'ไม่มี LINE User ID',
-                        text: 'ลูกค้านี้ยังไม่มี LINE User ID กรุณาอัปเดตก่อนส่งข้อความ',
-                    });
-                    return;
-                }
-
-                const result = await Swal.fire({
-                    ...getSwalTheme(),
-                    title: '📨 ส่งข้อความ LINE',
-                    html: `ส่งข้อความแจ้งเตือนไปยัง <strong>${customer.email}</strong>?`,
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: '<i class="fa-brands fa-line"></i> ส่งเลย',
-                    cancelButtonText: 'ยกเลิก',
-                });
-
-                if (!result.isConfirmed) return;
-
-                try {
-                    const data = await callAPI('sendLineNotification', {
-                        customerId: customer.id || customer._id
-                    });
-
-                    if (data.success) {
-                        Swal.fire({
-                            ...getSwalTheme(),
-                            icon: 'success',
-                            title: 'ส่งข้อความ LINE สำเร็จ',
-                            html: `ส่งไปยัง LINE User ID: ${customer.lineUserId}`,
-                            timer: 3000,
-                            showConfirmButton: false,
-                        });
-                    } else {
-                        Swal.fire({
-                            ...getSwalTheme(),
-                            icon: 'error',
-                            title: 'ส่งไม่สำเร็จ',
-                            text: data.lineResult?.body || 'เกิดข้อผิดพลาดในการส่ง',
-                        });
-                    }
-                } catch (e) {
-                    Swal.fire({
-                        ...getSwalTheme(),
-                        icon: 'error',
-                        title: 'เกิดข้อผิดพลาด',
-                        text: e.message,
-                    });
-                }
-            };
-
             const daysRemaining = (expiryDate) => {
                 if (!expiryDate) return null;
                 try {
@@ -2874,7 +2892,6 @@
                                                 <th>วันที่ซื้อ</th>
                                                 <th>วันหมดอายุ</th>
                                                 <th>คงเหลือ</th>
-                                                <th>LINE</th>
                                                 <th>จัดการ</th>
                                             </tr>
                                         </thead>
@@ -2906,23 +2923,7 @@
                                                             <td className="text-sm font-semibold">{formatDisplayDate(c.expiryDate)}</td>
                                                             <td><span className={`badge ${statusBadge.className}`}>{statusBadge.text}</span></td>
                                                             <td>
-                                                                {c.lineUserId ? (
-                                                                    <span className="badge badge-success" title={c.lineUserId}>
-                                                                        <i className="fa-brands fa-line"></i> เชื่อมแล้ว
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="badge badge-neutral" title="ยังไม่ได้เชื่อม LINE OA">
-                                                                        <i className="fa-solid fa-circle-xmark"></i> ยังไม่เชื่อม
-                                                                    </span>
-                                                                )}
-                                                            </td>
-                                                            <td>
-                                                                <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                                                                    {c.lineUserId && (
-                                                                        <button className="btn btn-success btn-sm" onClick={() => handleSendLineTest(c)} title="ส่งข้อความ LINE">
-                                                                            <i className="fa-brands fa-line"></i>
-                                                                        </button>
-                                                                    )}
+                                                                <div style={{ display: 'flex', gap: '4px' }}>
                                                                     <button className="btn btn-secondary btn-sm" onClick={() => openEdit(c)} title="แก้ไข">
                                                                         <i className="fa-solid fa-pen-to-square"></i>
                                                                     </button>
@@ -2936,7 +2937,7 @@
                                                 })
                                             ) : (
                                                 <tr>
-                                                    <td colSpan="10">
+                                                    <td colSpan="9">
                                                         <div className="empty-state">
                                                             <i className="fa-solid fa-users-slash"></i>
                                                             <p>{search ? 'ไม่พบข้อมูลที่ค้นหา' : 'ไม่มีข้อมูลลูกค้า'}</p>
@@ -2984,8 +2985,7 @@
                                     <div className="input-group">
                                         <label>ร้านค้า</label>
                                         <input className="input-field" value={form.storeName}
-                                            onChange={e => setForm({ ...form, storeName: e.target.value })}
-                                            disabled={!isAdmin} />
+                                            onChange={e => setForm({ ...form, storeName: e.target.value })} />
                                     </div>
                                     <div className="input-group">
                                         <label>หัวบ้าน</label>
@@ -3009,19 +3009,6 @@
                                             onChange={e => setForm({ ...form, notificationEmail: e.target.value })}
                                             placeholder="email@example.com" />
                                     </div>
-                                    {/* ✨ เพิ่มฟิลด์ LINE User ID */}
-                                    <div className="input-group">
-                                        <label>
-                                            <i className="fa-brands fa-line" style={{ color: '#06C755', marginRight: '0.25rem' }}></i>
-                                            LINE User ID
-                                        </label>
-                                        <input className="input-field" value={form.lineUserId}
-                                            onChange={e => setForm({ ...form, lineUserId: e.target.value })}
-                                            placeholder="Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
-                                        <div style={{ fontSize: '0.6875rem', color: 'var(--text-tertiary)', marginTop: '0.25rem' }}>
-                                            <i className="fa-solid fa-circle-info"></i> สำหรับส่งแจ้งเตือนผ่าน LINE OA (ต้องเป็นเพื่อนกับ OA ก่อน)
-                                        </div>
-                                    </div>
                                 </div>
                                 <div className="modal-actions">
                                     <button className="btn btn-secondary" onClick={() => setShowModal(false)}>
@@ -3041,7 +3028,7 @@
 
         // ==================== CHECK PAGE ====================
         const CheckPage = () => {
-            const { user, callAPI } = useApp();
+            const { user, callAPI, LINE_OA_LINK } = useApp();
             const [searchEmail, setSearchEmail] = useState('');
             const [result, setResult] = useState(null);
             const [searched, setSearched] = useState(false);
@@ -3089,7 +3076,25 @@
                         <h1 className="page-title">
                             <span className="icon"><i className="fa-solid fa-magnifying-glass"></i></span> เช็คข้อมูล
                         </h1>
+                        <a href={LINE_OA_LINK} target="_blank" rel="noopener noreferrer" className="btn btn-success btn-sm">
+                            <i className="fa-brands fa-line"></i> เช็คผ่าน LINE OA
+                        </a>
                     </div>
+
+                    {/* LINE OA Info */}
+                    <div className="glass-card" style={{ maxWidth: '640px', margin: '0 auto 1rem auto', background: 'linear-gradient(135deg, rgba(6,199,85,0.1), rgba(6,199,85,0.05))' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <i className="fa-brands fa-line" style={{ fontSize: '1.5rem', color: '#06C755' }}></i>
+                            <div style={{ flex: 1 }}>
+                                <p className="text-sm" style={{ fontWeight: 600 }}>ตรวจสอบข้อมูลผ่าน LINE OA ได้ง่ายๆ</p>
+                                <p className="text-xs text-muted">แอด LINE OA แล้วพิมพ์อีเมลเพื่อเช็คข้อมูลทันที</p>
+                            </div>
+                            <a href={LINE_OA_LINK} target="_blank" rel="noopener noreferrer" className="btn btn-success btn-sm">
+                                แอดเลย
+                            </a>
+                        </div>
+                    </div>
+
                     <div className="glass-card" style={{ maxWidth: '640px', margin: '0 auto' }}>
                         <div style={{ marginBottom: '1.25rem' }}>
                             <div className="input-group" style={{ marginBottom: '0.75rem' }}>
@@ -3142,6 +3147,7 @@
                                         <i className="fa-solid fa-circle-exclamation" style={{ color: 'var(--warning)', opacity: 0.6 }}></i>
                                         <p style={{ fontWeight: 500 }}>ไม่พบข้อมูล</p>
                                         <p className="text-sm text-muted" style={{ marginTop: '0.25rem' }}>ไม่พบลูกค้าที่ใช้อีเมล "{searchEmail}"</p>
+                                        <p className="text-xs text-muted" style={{ marginTop: '0.5rem' }}>💡 ลองเช็คผ่าน LINE OA โดยพิมพ์อีเมล</p>
                                     </div>
                                 )}
                             </div>
@@ -3206,7 +3212,7 @@
                     'removeMemberFromFamily': '➖ ลบสมาชิกบ้าน',
                     'getFamilyHeadDetail': '🔍 ดูรายละเอียดหัวบ้าน',
                     'getUserProfile': '👤 ดูโปรไฟล์',
-                    'sendLineNotification': '📨 ส่งข้อความ LINE',
+                    'line_check_email': '📱 เช็คอีเมลผ่าน LINE OA',
                 };
                 return map[action] || `📌 ${action}`;
             };
@@ -3214,6 +3220,9 @@
             const formatDetail = (log) => {
                 try {
                     const details = typeof log.details === 'string' ? JSON.parse(log.details) : log.details;
+                    if (log.action === 'line_check_email') {
+                        return `📱 LINE OA: เช็คอีเมล ${details.email} - ${details.found ? 'พบข้อมูล' : 'ไม่พบข้อมูล'}`;
+                    }
                     if (details.action === 'updateCustomer' && details.oldData && details.newData) return `✏️ แก้ไข: ${details.oldData.email || details.oldData.accountName}`;
                     if (details.action === 'deleteCustomer' && details.deletedData) return `🗑️ ลบ: ${details.deletedData.email}`;
                     if (details.action === 'addCustomer' && details.newData) return `➕ เพิ่ม: ${details.newData.email}`;
@@ -3231,7 +3240,7 @@
                 if (action.includes('update')) return 'fa-pen-to-square';
                 if (action.includes('delete') || action.includes('remove')) return 'fa-trash-can';
                 if (action.includes('login') || action === 'loginOrRegister') return 'fa-right-to-bracket';
-                if (action.includes('sendLine')) return 'fa-paper-plane';
+                if (action === 'line_check_email') return 'fa-comment-dots';
                 return 'fa-circle-info';
             };
 
@@ -3240,7 +3249,7 @@
                 if (action.includes('update')) return 'var(--info)';
                 if (action.includes('delete') || action.includes('remove')) return 'var(--danger)';
                 if (action.includes('login') || action === 'loginOrRegister') return 'var(--warning)';
-                if (action.includes('sendLine')) return '#06C755';
+                if (action === 'line_check_email') return '#06C755';
                 return 'var(--text-secondary)';
             };
 
@@ -3250,7 +3259,7 @@
                 if (filter === 'edit') return log.action.includes('update');
                 if (filter === 'delete') return log.action.includes('delete') || log.action.includes('remove');
                 if (filter === 'login') return log.action === 'loginOrRegister' || log.action === 'login';
-                if (filter === 'line') return log.action.includes('sendLine');
+                if (filter === 'line') return log.action === 'line_check_email';
                 return true;
             });
 
@@ -3271,17 +3280,15 @@
 
                     <div className="glass-card" style={{ marginBottom: '1rem', padding: '0.75rem 1rem' }}>
                         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                            {[
-                                { id: 'all', label: '📋 ทั้งหมด' },
-                                { id: 'add', label: '➕ เพิ่ม' },
-                                { id: 'edit', label: '✏️ แก้ไข' },
-                                { id: 'delete', label: '🗑️ ลบ' },
-                                { id: 'login', label: '🔑 เข้าสู่ระบบ' },
-                                { id: 'line', label: '📨 ส่ง LINE' },
-                            ].map(f => (
-                                <button key={f.id} className={`btn btn-sm ${filter === f.id ? 'btn-primary' : 'btn-secondary'}`}
-                                    onClick={() => { setFilter(f.id); setPage(1); }}>
-                                    {f.label}
+                            {['all', 'add', 'edit', 'delete', 'login', 'line'].map(f => (
+                                <button key={f} className={`btn btn-sm ${filter === f ? 'btn-primary' : 'btn-secondary'}`}
+                                    onClick={() => { setFilter(f); setPage(1); }}>
+                                    {f === 'all' ? '📋 ทั้งหมด' :
+                                        f === 'add' ? '➕ เพิ่ม' :
+                                            f === 'edit' ? '✏️ แก้ไข' :
+                                                f === 'delete' ? '🗑️ ลบ' :
+                                                    f === 'login' ? '🔑 เข้าสู่ระบบ' :
+                                                        '📱 LINE OA'}
                                 </button>
                             ))}
                         </div>
@@ -3347,7 +3354,7 @@
 
         // ==================== PROFILE PAGE ====================
         const ProfilePage = () => {
-            const { user, logout } = useApp();
+            const { user, logout, LINE_OA_LINK } = useApp();
 
             const handleLogout = () => {
                 Swal.fire({
@@ -3370,7 +3377,7 @@
                     <div className="top-bar"><h1 className="page-title"><span className="icon"><i className="fa-solid fa-user-circle"></i></span> โปรไฟล์</h1></div>
                     <div className="glass-card" style={{ maxWidth: '540px' }}>
                         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                            <div className="user-avatar" style={{ width: '5.5rem', height: '5.5rem', margin: '0 auto 1.25rem', fontSize: '2rem', borderWidth: '3px', borderColor: 'var(--accent)', boxShadow: '0 0 30px var(--accent-light)' }}>
+                            <div className="user-avatar" style={{ width: '5.5rem', height: '5.5rem', margin: '0 auto 1.25rem', fontSize: '2rem', borderWidth: '3px', borderColor: 'var(--accent)', boxShadow: '0 0 30px var(--accent-glow)' }}>
                                 {user?.pictureUrl ? <img src={user.pictureUrl} alt={user?.lineName || 'User'} onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.querySelector('i').style.display = 'flex'; }} /> : null}
                                 <i className="fa-solid fa-user" style={{ display: user?.pictureUrl ? 'none' : 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}></i>
                             </div>
@@ -3387,6 +3394,21 @@
                                 </tbody>
                             </table>
                         </div>
+
+                        {/* LINE OA Link */}
+                        <div style={{ marginBottom: '1rem', padding: '1rem', background: 'rgba(6,199,85,0.05)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(6,199,85,0.2)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <i className="fa-brands fa-line" style={{ fontSize: '1.5rem', color: '#06C755' }}></i>
+                                <div style={{ flex: 1 }}>
+                                    <p className="text-sm" style={{ fontWeight: 600 }}>LINE OA สำหรับเช็คข้อมูล</p>
+                                    <p className="text-xs text-muted">แอด LINE OA แล้วพิมพ์อีเมลเพื่อเช็คข้อมูลได้ทันที</p>
+                                </div>
+                                <a href={LINE_OA_LINK} target="_blank" rel="noopener noreferrer" className="btn btn-success btn-sm">
+                                    <i className="fa-solid fa-plus"></i> แอด
+                                </a>
+                            </div>
+                        </div>
+
                         <div style={{ textAlign: 'center', paddingTop: '1.25rem', borderTop: '1px solid var(--border-color)' }}>
                             <button className="btn btn-danger" onClick={handleLogout} style={{ borderRadius: 'var(--radius-full)', padding: '0.75rem 2rem' }}><i className="fa-solid fa-right-from-bracket"></i> ออกจากระบบ</button>
                         </div>
@@ -3755,7 +3777,7 @@
                         )}
                     </div>
 
-                    {/* Modals */}
+                    {/* Add Head Modal */}
                     {showAddHeadModal && (
                         <div className="modal-overlay" onClick={() => setShowAddHeadModal(false)}>
                             <div className="modal" onClick={e => e.stopPropagation()}>
@@ -3763,7 +3785,7 @@
                                 <div className="grid-2">
                                     <div className="input-group"><label>อีเมลหัวบ้าน *</label><input className="input-field" type="email" value={headForm.email} onChange={e => setHeadForm({ ...headForm, email: e.target.value })} placeholder="head@example.com" autoFocus /></div>
                                     <div className="input-group"><label>ชื่อบัญชี</label><input className="input-field" value={headForm.accountName} onChange={e => setHeadForm({ ...headForm, accountName: e.target.value })} placeholder="ชื่อบัญชี YouTube" /></div>
-                                    <div className="input-group"><label>ร้านค้า</label><input className="input-field" value={headForm.storeName} onChange={e => setHeadForm({ ...headForm, storeName: e.target.value })} disabled={!isAdmin} /></div>
+                                    <div className="input-group"><label>ร้านค้า</label><input className="input-field" value={headForm.storeName} onChange={e => setHeadForm({ ...headForm, storeName: e.target.value })} /></div>
                                 </div>
                                 <div style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: 'var(--info-light)', borderRadius: 'var(--radius-md)', fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
                                     <i className="fa-solid fa-info-circle" style={{ color: 'var(--info)', marginRight: '0.5rem' }}></i>คุณสามารถเพิ่มสมาชิกในบ้านนี้ได้สูงสุด 5 คน
@@ -3776,6 +3798,7 @@
                         </div>
                     )}
 
+                    {/* Edit Head Modal */}
                     {showEditHeadModal && selectedHead && (
                         <div className="modal-overlay" onClick={() => setShowEditHeadModal(false)}>
                             <div className="modal" onClick={e => e.stopPropagation()}>
@@ -3783,7 +3806,7 @@
                                 <div className="grid-2">
                                     <div className="input-group"><label>อีเมล *</label><input className="input-field" type="email" value={editHeadForm.email} onChange={e => setEditHeadForm({ ...editHeadForm, email: e.target.value })} /></div>
                                     <div className="input-group"><label>ชื่อบัญชี</label><input className="input-field" value={editHeadForm.accountName} onChange={e => setEditHeadForm({ ...editHeadForm, accountName: e.target.value })} /></div>
-                                    <div className="input-group"><label>ร้านค้า</label><input className="input-field" value={editHeadForm.storeName} onChange={e => setEditHeadForm({ ...editHeadForm, storeName: e.target.value })} disabled={!isAdmin} /></div>
+                                    <div className="input-group"><label>ร้านค้า</label><input className="input-field" value={editHeadForm.storeName} onChange={e => setEditHeadForm({ ...editHeadForm, storeName: e.target.value })} /></div>
                                 </div>
                                 <div className="modal-actions">
                                     <button className="btn btn-secondary" onClick={() => setShowEditHeadModal(false)}><i className="fa-solid fa-xmark"></i> ยกเลิก</button>
@@ -3793,6 +3816,7 @@
                         </div>
                     )}
 
+                    {/* Add Member Modal */}
                     {showAddMemberModal && selectedHead && (
                         <div className="modal-overlay" onClick={() => setShowAddMemberModal(false)}>
                             <div className="modal" onClick={e => e.stopPropagation()}>
@@ -3810,6 +3834,7 @@
                         </div>
                     )}
 
+                    {/* Detail Modal */}
                     {showDetailModal && familyHeadDetail && (
                         <div className="modal-overlay" onClick={() => setShowDetailModal(false)}>
                             <div className="modal" onClick={e => e.stopPropagation()}>
