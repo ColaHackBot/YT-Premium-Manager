@@ -2551,26 +2551,32 @@
                 return `${yyyy}-${mm}-${dd}`;
             };
 
+            // ✅ ฟังก์ชัน calculateExpiry ที่แก้ไขแล้ว: วันจะไม่เปลี่ยนเกินจริง
             const calculateExpiry = (purchaseDate, packageStr) => {
                 if (!purchaseDate || !packageStr) return '';
                 const monthsMatch = packageStr.match(/(\d+)\s*เดือน/);
                 if (!monthsMatch) return '';
                 const months = parseInt(monthsMatch[1]);
-                const d = new Date(purchaseDate + 'T00:00:00');
-                // เก็บวันที่เดิมไว้ก่อนบวกเดือน
-                const originalDay = d.getDate();
-                d.setMonth(d.getMonth() + months);
-                // ถ้าเดือนใหม่มีจำนวนวันน้อยกว่าวันที่เดิม (เช่น 31 ม.ค. -> มี.ค. มี 28/29 วัน)
-                // ให้ใช้จำนวนวันสูงสุดของเดือนนั้นแทน
-                if (d.getDate() !== originalDay) {
-                    // setMonth จะปรับวันที่อัตโนมัติถ้าเกิน ให้ตั้งเป็น 0 เพื่อไปวันสุดท้ายของเดือนก่อนหน้า
-                    // แต่วิธีนี้วันที่อาจเปลี่ยนไป ซึ่งเป็นธรรมชาติของปฏิทิน
-                    // เราจะใช้วิธีที่ปลอดภัย: ใช้ originalDay แต่ถ้าเกินจำนวนวันในเดือนให้ใช้วันสุดท้าย
-                }
-                const yyyy = d.getFullYear();
-                const mm = String(d.getMonth() + 1).padStart(2, '0');
-                const dd = String(d.getDate()).padStart(2, '0');
-                return `${yyyy}-${mm}-${dd}`;
+
+                // แยกปี-เดือน-วันจาก purchaseDate (รูป YYYY-MM-DD)
+                const [year, month, day] = purchaseDate.split('-').map(Number);
+                const originalDay = day;
+
+                // คำนวณเดือนและปีปลายทาง (0-based)
+                let targetMonth = month - 1 + months;
+                let targetYear = year + Math.floor(targetMonth / 12);
+                targetMonth = targetMonth % 12;
+
+                // หาจำนวนวันสูงสุดของเดือนปลายทาง
+                const lastDayOfTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+
+                // วันที่ใหม่ = min(วันเดิม, จำนวนวันสูงสุดในเดือนนั้น)
+                const newDay = Math.min(originalDay, lastDayOfTargetMonth);
+
+                // จัดรูปแบบ YYYY-MM-DD
+                const mm = String(targetMonth + 1).padStart(2, '0');
+                const dd = String(newDay).padStart(2, '0');
+                return `${targetYear}-${mm}-${dd}`;
             };
 
             const handlePackageChange = (value) => {
