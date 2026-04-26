@@ -1488,7 +1488,7 @@
 
         // ==================== CONFIG ====================
         const APPS_SCRIPT_URL =
-            'https://script.google.com/macros/s/AKfycbyGVHdPaRa1I7qk-ujJ_YnlXWu8PdV6SDEuGSCZGCFWz8qNnNXLwYpe3kW2GVp-W7tQ/exec';
+            'https://script.google.com/macros/s/AKfycbx3UvjnlCIO8wZfRlxIs7vh0O_WknTQWrglfXg-mmeD_NyppJzQ5aVBv05JNTnsd9n1/exec';
         const LIFF_ID = '2009880685-UCuYnwIF';
         const LINE_OA_LINK = 'https://lin.ee/Toaxx8d';
 
@@ -1639,6 +1639,7 @@
             const [toast, setToast] = useState(null);
             const [debugVisible, setDebugVisible] = useState(false);
             const [initError, setInitError] = useState(null);
+            const [initialStats, setInitialStats] = useState(null);
 
             useEffect(() => {
                 const initApp = async () => {
@@ -1711,9 +1712,9 @@
 
             const registerOrLoginUser = async (profile) => {
                 try {
-                    addDebugLog(`Registering/Logging in user: ${profile.displayName}`, 'info');
+                    addDebugLog(`Initializing app for: ${profile.displayName}`, 'info');
                     const requestData = {
-                        action: 'loginOrRegister',
+                        action: 'initializeApp',
                         userId: profile.userId,
                         lineName: profile.displayName,
                         pictureUrl: profile.pictureUrl,
@@ -1731,16 +1732,17 @@
                             rank: parseInt(data.user.rank) || 0
                         };
                         setUser(userData);
+                        if (data.stats) setInitialStats(data.stats);
                         addDebugLog(
-                            `User logged in: ${userData.lineName} (rank: ${userData.rank}, store: ${userData.storeName})`,
+                            `App initialized: ${userData.lineName} (rank: ${userData.rank}, store: ${userData.storeName})`,
                             'success');
                         setLoading(false);
                     } else {
-                        throw new Error(data.message || 'Login failed');
+                        throw new Error(data.message || 'Initialize failed');
                     }
                 } catch (error) {
-                    addDebugLog(`Login/Register failed: ${error.message}`, 'error');
-                    showToast('เกิดข้อผิดพลาดในการเข้าสู่ระบบ: ' + error.message, 'danger');
+                    addDebugLog(`InitializeApp failed: ${error.message}`, 'error');
+                    showToast('เกิดข้อผิดพลาดในการโหลดข้อมูล: ' + error.message, 'danger');
                     setLoading(false);
                 }
             };
@@ -1761,6 +1763,7 @@
                 setUser(null);
                 setCurrentPage('dashboard');
                 setSidebarOpen(false);
+                setInitialStats(null);
                 showToast('ออกจากระบบแล้ว');
             };
 
@@ -1786,6 +1789,7 @@
                 toast,
                 setToast,
                 LINE_OA_LINK,
+                initialStats,
             };
 
             return (
@@ -2196,7 +2200,7 @@
 
         // ==================== DASHBOARD PAGE ====================
         const Dashboard = () => {
-            const { user, callAPI, LINE_OA_LINK } = useApp();
+            const { user, callAPI, initialStats, LINE_OA_LINK } = useApp();
             const [stats, setStats] = useState(null);
             const [loading, setLoading] = useState(true);
             const barChartRef = useRef(null);
@@ -2205,13 +2209,18 @@
             const pieInstance = useRef(null);
 
             const fetchStats = useCallback(async () => {
+                if (initialStats) {
+                    setStats(initialStats);
+                    setLoading(false);
+                    return;
+                }
                 setLoading(true);
                 try {
                     const data = await callAPI('getDashboardStats');
                     setStats(data.stats);
                 } catch (e) { }
                 setLoading(false);
-            }, [callAPI]);
+            }, [callAPI, initialStats]);
 
             useEffect(() => {
                 fetchStats();
@@ -2383,6 +2392,15 @@
                             <a href={LINE_OA_LINK} target="_blank" rel="noopener noreferrer" className="btn btn-success btn-sm">
                                 <i className="fa-brands fa-line"></i> LINE OA
                             </a>
+                            <button className="btn btn-secondary btn-sm" onClick={() => {
+                                setLoading(true);
+                                callAPI('getDashboardStats').then(data => {
+                                    setStats(data.stats);
+                                    setLoading(false);
+                                }).catch(() => setLoading(false));
+                            }}>
+                                <i className="fa-solid fa-rotate"></i> รีเฟรช
+                            </button>
                             <span className="text-sm text-muted">
                                 <i className="fa-solid fa-calendar-check"></i>{' '}
                                 {new Date().toLocaleDateString('th-TH', {
@@ -3185,6 +3203,7 @@
                     'getFamilyHeadDetail': '🔍 ดูรายละเอียดหัวบ้าน',
                     'getUserProfile': '👤 ดูโปรไฟล์',
                     'line_check_email': '📱 เช็คอีเมลผ่าน LINE OA',
+                    'initializeApp': '🚀 เริ่มต้นแอปพลิเคชัน',
                 };
                 return map[action] || `📌 ${action}`;
             };
@@ -3211,7 +3230,7 @@
                 if (action.includes('add') || action === 'register') return 'fa-plus-circle';
                 if (action.includes('update')) return 'fa-pen-to-square';
                 if (action.includes('delete') || action.includes('remove')) return 'fa-trash-can';
-                if (action.includes('login') || action === 'loginOrRegister') return 'fa-right-to-bracket';
+                if (action.includes('login') || action === 'loginOrRegister' || action === 'initializeApp') return 'fa-right-to-bracket';
                 if (action === 'line_check_email') return 'fa-comment-dots';
                 return 'fa-circle-info';
             };
@@ -3220,7 +3239,7 @@
                 if (action.includes('add') || action === 'register') return 'var(--success)';
                 if (action.includes('update')) return 'var(--info)';
                 if (action.includes('delete') || action.includes('remove')) return 'var(--danger)';
-                if (action.includes('login') || action === 'loginOrRegister') return 'var(--warning)';
+                if (action.includes('login') || action === 'loginOrRegister' || action === 'initializeApp') return 'var(--warning)';
                 if (action === 'line_check_email') return '#06C755';
                 return 'var(--text-secondary)';
             };
@@ -3230,7 +3249,7 @@
                 if (filter === 'add') return log.action.includes('add') || log.action === 'register';
                 if (filter === 'edit') return log.action.includes('update');
                 if (filter === 'delete') return log.action.includes('delete') || log.action.includes('remove');
-                if (filter === 'login') return log.action === 'loginOrRegister' || log.action === 'login';
+                if (filter === 'login') return log.action === 'loginOrRegister' || log.action === 'login' || log.action === 'initializeApp';
                 if (filter === 'line') return log.action === 'line_check_email';
                 return true;
             });
@@ -4064,7 +4083,7 @@
                         <Toast />
                         <DebugPanel />
                         <button className="theme-toggle" onClick={toggleTheme} title="เปลี่ยนธีม">
-                            <i className={`fa-solid fa-${theme === 'dark' ? 'sun' : 'มูน'}`}></i>
+                            <i className={`fa-solid fa-${theme === 'dark' ? 'sun' : 'moon'}`}></i>
                         </button>
                     </div>
                 );
