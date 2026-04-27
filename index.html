@@ -1263,220 +1263,386 @@
         }
 
         .page-info {
-            color: var(--text-tertiary);
-            font-size: 0.75rem;
-            text-align: center;
-            margin-top: 0.5rem;
-        }
+            color: var(--text-tertiary;
+                    font-size: 0.75rem;
+                    text-align: center;
+                    margin-top: 0.5rem;
+            }
 
-        /* Debug Panel */
-        .debug-panel {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(0, 0, 0, 0.95);
-            color: #10b981;
-            padding: 0.75rem 1rem;
-            font-size: 0.6875rem;
-            font-family: var(--font-mono);
-            z-index: 9999;
-            max-height: 30vh;
-            overflow-y: auto;
-            border-top: 2px solid #10b981;
-            display: none;
-        }
+            /* Debug Panel */
+            .debug-panel {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: rgba(0, 0, 0, 0.95);
+                color: #10b981;
+                padding: 0.75rem 1rem;
+                font-size: 0.6875rem;
+                font-family: var(--font-mono);
+                z-index: 9999;
+                max-height: 30vh;
+                overflow-y: auto;
+                border-top: 2px solid #10b981;
+                display: none;
+            }
 
-        .debug-panel.visible {
-            display: block;
-        }
+            .debug-panel.visible {
+                display: block;
+            }
 
-        .debug-entry {
-            padding: 0.25rem 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            word-break: break-all;
-            line-height: 1.5;
-        }
+            .debug-entry {
+                padding: 0.25rem 0;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+                word-break: break-all;
+                line-height: 1.5;
+            }
 
-        .debug-entry.error {
-            color: #f87171;
-        }
+            .debug-entry.error {
+                color: #f87171;
+            }
 
-        .debug-entry.success {
-            color: #34d399;
-        }
+            .debug-entry.success {
+                color: #34d399;
+            }
 
-        .debug-entry.warning {
-            color: #fbbf24;
-        }
+            .debug-entry.warning {
+                color: #fbbf24;
+            }
 
-        .debug-entry.info {
-            color: #60a5fa;
-        }
+            .debug-entry.info {
+                color: #60a5fa;
+            }
 
-        /* Floating Action Buttons */
-        .debug-toggle {
-            position: fixed;
-            bottom: 1.5rem;
-            right: 5rem;
-            z-index: 10000;
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            color: var(--text-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 50%;
-            width: 2.75rem;
-            height: 2.75rem;
-            font-size: 0.9375rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all var(--transition);
-            box-shadow: var(--shadow-md);
-        }
-
-        .debug-toggle:hover {
-            color: var(--accent);
-            border-color: var(--accent);
-            box-shadow: var(--shadow-lg);
-            transform: scale(1.05);
-        }
-
-        .theme-toggle {
-            position: fixed;
-            bottom: 1.5rem;
-            right: 1.5rem;
-            z-index: 10000;
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            color: var(--text-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 50%;
-            width: 2.75rem;
-            height: 2.75rem;
-            font-size: 1.125rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all var(--transition);
-            box-shadow: var(--shadow-md);
-        }
-
-        .theme-toggle:hover {
-            color: var(--warning);
-            border-color: var(--warning);
-            transform: scale(1.1) rotate(15deg);
-            box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
-        }
-
-        .theme-toggle:active {
-            transform: scale(0.95) rotate(0deg);
-        }
-
-        @media (max-width: 768px) {
+            /* Floating Action Buttons */
             .debug-toggle {
-                bottom: 5.5rem;
-                right: 1rem;
-                width: 2.5rem;
-                height: 2.5rem;
+                position: fixed;
+                bottom: 1.5rem;
+                right: 5rem;
+                z-index: 10000;
+                background: var(--glass-bg);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                color: var(--text-secondary);
+                border: 1px solid var(--border-color);
+                border-radius: 50%;
+                width: 2.75rem;
+                height: 2.75rem;
+                font-size: 0.9375rem;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all var(--transition);
+                box-shadow: var(--shadow-md);
+            }
+
+            .debug-toggle:hover {
+                color: var(--accent);
+                border-color: var(--accent);
+                box-shadow: var(--shadow-lg);
+                transform: scale(1.05);
             }
 
             .theme-toggle {
-                bottom: 5.5rem;
-                right: 4.25rem;
-                width: 2.5rem;
-                height: 2.5rem;
+                position: fixed;
+                bottom: 1.5rem;
+                right: 1.5rem;
+                z-index: 10000;
+                background: var(--glass-bg);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                color: var(--text-secondary);
+                border: 1px solid var(--border-color);
+                border-radius: 50%;
+                width: 2.75rem;
+                height: 2.75rem;
+                font-size: 1.125rem;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all var(--transition);
+                box-shadow: var(--shadow-md);
             }
-        }
 
-        @media (max-width: 480px) {
-            .debug-toggle {
-                bottom: 5rem;
-                right: 0.75rem;
-                width: 2.25rem;
-                height: 2.25rem;
+            .theme-toggle:hover {
+                color: var(--warning);
+                border-color: var(--warning);
+                transform: scale(1.1) rotate(15deg);
+                box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
+            }
+
+            .theme-toggle:active {
+                transform: scale(0.95) rotate(0deg);
+            }
+
+            @media (max-width: 768px) {
+                .debug-toggle {
+                    bottom: 5.5rem;
+                    right: 1rem;
+                    width: 2.5rem;
+                    height: 2.5rem;
+                }
+
+                .theme-toggle {
+                    bottom: 5.5rem;
+                    right: 4.25rem;
+                    width: 2.5rem;
+                    height: 2.5rem;
+                }
+            }
+
+            @media (max-width: 480px) {
+                .debug-toggle {
+                    bottom: 5rem;
+                    right: 0.75rem;
+                    width: 2.25rem;
+                    height: 2.25rem;
+                    font-size: 0.8125rem;
+                }
+
+                .theme-toggle {
+                    bottom: 5rem;
+                    right: 3.75rem;
+                    width: 2.25rem;
+                    height: 2.25rem;
+                    font-size: 1rem;
+                }
+            }
+
+            /* Quick Actions */
+            .quick-actions {
+                display: flex;
+                gap: 0.5rem;
+                flex-wrap: wrap;
+                margin-bottom: 1.25rem;
+            }
+
+            .divider {
+                border: none;
+                border-top: 1px solid var(--border-color);
+                margin: 1.5rem 0;
+            }
+
+            .text-muted {
+                color: var(--text-tertiary);
+            }
+
+            .text-sm {
                 font-size: 0.8125rem;
             }
 
-            .theme-toggle {
-                bottom: 5rem;
-                right: 3.75rem;
-                width: 2.25rem;
-                height: 2.25rem;
-                font-size: 1rem;
+            .text-xs {
+                font-size: 0.6875rem;
             }
-        }
 
-        /* Quick Actions */
-        .quick-actions {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-            margin-bottom: 1.25rem;
-        }
+            .font-mono {
+                font-family: var(--font-mono);
+            }
 
-        .divider {
-            border: none;
-            border-top: 1px solid var(--border-color);
-            margin: 1.5rem 0;
-        }
+            .font-bold {
+                font-weight: 700;
+            }
 
-        .text-muted {
-            color: var(--text-tertiary);
-        }
+            .font-semibold {
+                font-weight: 600;
+            }
 
-        .text-sm {
-            font-size: 0.8125rem;
-        }
+            .truncate {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
 
-        .text-xs {
-            font-size: 0.6875rem;
-        }
+            .package-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+                gap: 0.75rem;
+            }
 
-        .font-mono {
-            font-family: var(--font-mono);
-        }
+            .package-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0.75rem 1rem;
+                border-radius: var(--radius-md);
+                background: var(--bg-tertiary);
+                border: 1px solid var(--border-color);
+            }
 
-        .font-bold {
-            font-weight: 700;
-        }
+            .package-item .count {
+                font-family: var(--font-mono);
+                font-weight: 700;
+                font-size: 1.125rem;
+                color: var(--accent);
+            }
 
-        .font-semibold {
-            font-weight: 600;
-        }
+            /* Expiry Breakdown Section Styles */
+            .expiry-summary-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+                gap: 0.75rem;
+                margin-bottom: 1.25rem;
+            }
 
-        .truncate {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
+            .expiry-card {
+                border-radius: var(--radius-lg);
+                padding: 1rem;
+                border: 1px solid var(--border-color);
+                text-align: center;
+                transition: all var(--transition);
+                cursor: pointer;
+                position: relative;
+                overflow: hidden;
+            }
 
-        .package-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 0.75rem;
-        }
+            .expiry-card:hover {
+                transform: translateY(-2px);
+                box-shadow: var(--shadow-md);
+            }
 
-        .package-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.75rem 1rem;
-            border-radius: var(--radius-md);
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-        }
+            .expiry-card .expiry-count {
+                font-family: var(--font-mono);
+                font-size: 2rem;
+                font-weight: 800;
+                line-height: 1.2;
+            }
 
-        .package-item .count {
-            font-family: var(--font-mono);
-            font-weight: 700;
-            font-size: 1.125rem;
-            color: var(--accent);
-        }
+            .expiry-card .expiry-label {
+                font-size: 0.75rem;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                margin-top: 0.25rem;
+            }
+
+            .expiry-card .expiry-icon {
+                font-size: 1.25rem;
+                margin-bottom: 0.25rem;
+            }
+
+            .expiry-card.expired {
+                border-left: 4px solid #9ca3af;
+                background: linear-gradient(135deg, rgba(156, 163, 175, 0.08), transparent);
+            }
+
+            .expiry-card.expired .expiry-count {
+                color: #9ca3af;
+            }
+
+            .expiry-card.day0 {
+                border-left: 4px solid #ef4444;
+                background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), transparent);
+            }
+
+            .expiry-card.day0 .expiry-count {
+                color: #ef4444;
+            }
+
+            .expiry-card.day1 {
+                border-left: 4px solid #f87171;
+                background: linear-gradient(135deg, rgba(248, 113, 113, 0.08), transparent);
+            }
+
+            .expiry-card.day1 .expiry-count {
+                color: #f87171;
+            }
+
+            .expiry-card.day2 {
+                border-left: 4px solid #fb923c;
+                background: linear-gradient(135deg, rgba(251, 146, 60, 0.08), transparent);
+            }
+
+            .expiry-card.day2 .expiry-count {
+                color: #fb923c;
+            }
+
+            .expiry-card.day3 {
+                border-left: 4px solid #f59e0b;
+                background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), transparent);
+            }
+
+            .expiry-card.day3 .expiry-count {
+                color: #f59e0b;
+            }
+
+            .expiry-card.day7 {
+                border-left: 4px solid #eab308;
+                background: linear-gradient(135deg, rgba(234, 179, 8, 0.08), transparent);
+            }
+
+            .expiry-card.day7 .expiry-count {
+                color: #eab308;
+            }
+
+            .expiry-detail-section {
+                margin-bottom: 1rem;
+                border-radius: var(--radius-lg);
+                border: 1px solid var(--border-color);
+                overflow: hidden;
+            }
+
+            .expiry-detail-header {
+                padding: 0.75rem 1rem;
+                font-weight: 600;
+                font-size: 0.875rem;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                cursor: pointer;
+                transition: background var(--transition);
+            }
+
+            .expiry-detail-header:hover {
+                opacity: 0.9;
+            }
+
+            .expiry-detail-body {
+                padding: 0 1rem 1rem 1rem;
+            }
+
+            @media (max-width: 768px) {
+                .expiry-summary-grid {
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 0.5rem;
+                }
+
+                .expiry-card {
+                    padding: 0.75rem 0.5rem;
+                }
+
+                .expiry-card .expiry-count {
+                    font-size: 1.5rem;
+                }
+
+                .expiry-card .expiry-label {
+                    font-size: 0.625rem;
+                }
+            }
+
+            @media (max-width: 480px) {
+                .expiry-summary-grid {
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 0.375rem;
+                }
+
+                .expiry-card {
+                    padding: 0.625rem 0.375rem;
+                }
+
+                .expiry-card .expiry-count {
+                    font-size: 1.25rem;
+                }
+
+                .expiry-card .expiry-label {
+                    font-size: 0.5625rem;
+                }
+
+                .expiry-card .expiry-icon {
+                    font-size: 1rem;
+                }
+            }
     </style>
 </head>
 
@@ -1488,7 +1654,7 @@
 
         // ==================== CONFIG ====================
         const APPS_SCRIPT_URL =
-            'https://script.google.com/macros/s/AKfycbx3UvjnlCIO8wZfRlxIs7vh0O_WknTQWrglfXg-mmeD_NyppJzQ5aVBv05JNTnsd9n1/exec';
+            'https://script.google.com/macros/s/AKfycbz6VWpzvywRHui6vTS1Pluejkujxt351ns0p83gkERCEvSdidqoQHaAs4ojivzIN71K/exec';
         const LIFF_ID = '2009880685-UCuYnwIF';
         const LINE_OA_LINK = 'https://lin.ee/Toaxx8d';
 
@@ -2203,6 +2369,9 @@
             const { user, callAPI, initialStats, LINE_OA_LINK } = useApp();
             const [stats, setStats] = useState(null);
             const [loading, setLoading] = useState(true);
+            const [expiryBreakdown, setExpiryBreakdown] = useState(null);
+            const [expiryLoading, setExpiryLoading] = useState(false);
+            const [expandedSections, setExpandedSections] = useState({});
             const barChartRef = useRef(null);
             const pieChartRef = useRef(null);
             const barInstance = useRef(null);
@@ -2222,9 +2391,31 @@
                 setLoading(false);
             }, [callAPI, initialStats]);
 
+            const fetchExpiryBreakdown = useCallback(async () => {
+                setExpiryLoading(true);
+                try {
+                    const data = await callAPI('getExpiryBreakdown');
+                    if (data && data.breakdown) {
+                        setExpiryBreakdown(data.breakdown);
+                    }
+                } catch (e) {
+                    addDebugLog('Failed to fetch expiry breakdown, will use stats data if available', 'warning');
+                    if (stats && stats.expiryBreakdown) {
+                        setExpiryBreakdown(stats.expiryBreakdown);
+                    }
+                }
+                setExpiryLoading(false);
+            }, [callAPI, stats]);
+
             useEffect(() => {
                 fetchStats();
             }, [fetchStats]);
+
+            useEffect(() => {
+                if (!loading && stats) {
+                    fetchExpiryBreakdown();
+                }
+            }, [loading, stats, fetchExpiryBreakdown]);
 
             useEffect(() => {
                 if (!stats || loading) return;
@@ -2347,6 +2538,97 @@
                 return { className: 'badge-success', text: `✅ ${remaining} วัน` };
             };
 
+            const toggleExpirySection = (key) => {
+                setExpandedSections(prev => ({
+                    ...prev,
+                    [key]: !prev[key]
+                }));
+            };
+
+            // Config for expiry breakdown categories
+            const expiryCategories = [
+                {
+                    key: 'expired',
+                    label: 'หมดอายุแล้ว',
+                    icon: 'fa-circle-xmark',
+                    cssClass: 'expired',
+                    color: '#9ca3af',
+                    bgColor: 'rgba(156,163,175,0.1)',
+                    badgeClass: 'badge-neutral',
+                    headerBg: 'rgba(156,163,175,0.08)',
+                },
+                {
+                    key: 'day0',
+                    label: '0 วัน (วันนี้)',
+                    icon: 'fa-skull',
+                    cssClass: 'day0',
+                    color: '#ef4444',
+                    bgColor: 'rgba(239,68,68,0.1)',
+                    badgeClass: 'badge-danger',
+                    headerBg: 'rgba(239,68,68,0.1)',
+                },
+                {
+                    key: 'day1',
+                    label: 'เหลือ 1 วัน',
+                    icon: 'fa-circle-exclamation',
+                    cssClass: 'day1',
+                    color: '#f87171',
+                    bgColor: 'rgba(248,113,113,0.1)',
+                    badgeClass: 'badge-danger',
+                    headerBg: 'rgba(248,113,113,0.08)',
+                },
+                {
+                    key: 'day2',
+                    label: 'เหลือ 2 วัน',
+                    icon: 'fa-triangle-exclamation',
+                    cssClass: 'day2',
+                    color: '#fb923c',
+                    bgColor: 'rgba(251,146,60,0.1)',
+                    badgeClass: 'badge-danger',
+                    headerBg: 'rgba(251,146,60,0.08)',
+                },
+                {
+                    key: 'day3',
+                    label: 'เหลือ 3 วัน',
+                    icon: 'fa-clock',
+                    cssClass: 'day3',
+                    color: '#f59e0b',
+                    bgColor: 'rgba(245,158,11,0.1)',
+                    badgeClass: 'badge-warning',
+                    headerBg: 'rgba(245,158,11,0.08)',
+                },
+                {
+                    key: 'day7',
+                    label: 'เหลือ 7 วัน',
+                    icon: 'fa-hourglass-half',
+                    cssClass: 'day7',
+                    color: '#eab308',
+                    bgColor: 'rgba(234,179,8,0.1)',
+                    badgeClass: 'badge-warning',
+                    headerBg: 'rgba(234,179,8,0.08)',
+                },
+            ];
+
+            const getTotalExpiring = () => {
+                if (!expiryBreakdown) return 0;
+                let total = 0;
+                expiryCategories.forEach(cat => {
+                    if (expiryBreakdown[cat.key]) {
+                        total += (expiryBreakdown[cat.key].count || 0);
+                    }
+                });
+                return total;
+            };
+
+            const refreshAll = () => {
+                setLoading(true);
+                callAPI('getDashboardStats').then(data => {
+                    setStats(data.stats);
+                    setLoading(false);
+                    fetchExpiryBreakdown();
+                }).catch(() => setLoading(false));
+            };
+
             if (loading) {
                 return (
                     <div>
@@ -2373,7 +2655,7 @@
                             <div className="empty-state">
                                 <i className="fa-solid fa-circle-exclamation"></i>
                                 <p>ไม่สามารถโหลดข้อมูลได้</p>
-                                <button className="btn btn-secondary btn-sm" style={{ marginTop: '1rem' }} onClick={fetchStats}>
+                                <button className="btn btn-secondary btn-sm" style={{ marginTop: '1rem' }} onClick={refreshAll}>
                                     <i className="fa-solid fa-rotate"></i> ลองใหม่
                                 </button>
                             </div>
@@ -2392,13 +2674,7 @@
                             <a href={LINE_OA_LINK} target="_blank" rel="noopener noreferrer" className="btn btn-success btn-sm">
                                 <i className="fa-brands fa-line"></i> LINE OA
                             </a>
-                            <button className="btn btn-secondary btn-sm" onClick={() => {
-                                setLoading(true);
-                                callAPI('getDashboardStats').then(data => {
-                                    setStats(data.stats);
-                                    setLoading(false);
-                                }).catch(() => setLoading(false));
-                            }}>
+                            <button className="btn btn-secondary btn-sm" onClick={refreshAll}>
                                 <i className="fa-solid fa-rotate"></i> รีเฟรช
                             </button>
                             <span className="text-sm text-muted">
@@ -2459,6 +2735,142 @@
                             </div>
                         </div>
                     </div>
+
+                    {/* ========== NEW: EXPIRY BREAKDOWN SECTION ========== */}
+                    <div className="glass-card" style={{ marginBottom: '1rem' }}>
+                        <div className="chart-title" style={{ marginBottom: '1rem', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                            <span>
+                                <i className="fa-solid fa-clock-rotate-left"></i> ลูกค้าที่ใกล้หมดอายุ / หมดอายุแล้ว
+                            </span>
+                            <span className="badge badge-warning">
+                                <i className="fa-solid fa-users"></i> รวม {getTotalExpiring()} คน
+                            </span>
+                        </div>
+
+                        {expiryLoading && !expiryBreakdown ? (
+                            <div className="loading-spinner" style={{ minHeight: '100px' }}>
+                                <div className="spinner" style={{ width: '2rem', height: '2rem', borderWidth: '2px' }}></div>
+                                <p className="text-sm text-muted">กำลังโหลดข้อมูลการหมดอายุ...</p>
+                            </div>
+                        ) : expiryBreakdown ? (
+                            <>
+                                {/* Summary Cards */}
+                                <div className="expiry-summary-grid">
+                                    {expiryCategories.map(cat => {
+                                        const data = expiryBreakdown[cat.key];
+                                        const count = data ? data.count : 0;
+                                        return (
+                                            <div
+                                                key={cat.key}
+                                                className={`expiry-card ${cat.cssClass}`}
+                                                onClick={() => toggleExpirySection(cat.key)}
+                                                title={`คลิกเพื่อดูรายละเอียด ${cat.label}`}
+                                            >
+                                                <div className="expiry-icon">
+                                                    <i className={`fa-solid ${cat.icon}`} style={{ color: cat.color }}></i>
+                                                </div>
+                                                <div className="expiry-count">{count}</div>
+                                                <div className="expiry-label">{cat.label}</div>
+                                                {count > 0 && (
+                                                    <div style={{ marginTop: '0.375rem' }}>
+                                                        <i className={`fa-solid fa-chevron-${expandedSections[cat.key] ? 'up' : 'down'}`}
+                                                            style={{ fontSize: '0.625rem', color: cat.color, opacity: 0.7 }}></i>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Detailed Tables */}
+                                {expiryCategories.map(cat => {
+                                    const data = expiryBreakdown[cat.key];
+                                    const customers = data ? data.customers : [];
+                                    const isExpanded = expandedSections[cat.key];
+
+                                    if (!customers || customers.length === 0) return null;
+
+                                    return (
+                                        <div key={cat.key} className="expiry-detail-section">
+                                            <div
+                                                className="expiry-detail-header"
+                                                style={{ background: cat.headerBg, color: cat.color }}
+                                                onClick={() => toggleExpirySection(cat.key)}
+                                            >
+                                                <span>
+                                                    <i className={`fa-solid ${cat.icon}`}></i>{' '}
+                                                    {cat.label} ({customers.length} คน)
+                                                </span>
+                                                <i className={`fa-solid fa-chevron-${isExpanded ? 'up' : 'down'}`}></i>
+                                            </div>
+                                            {isExpanded && (
+                                                <div className="expiry-detail-body">
+                                                    <div className="table-wrapper">
+                                                        <table>
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>อีเมล</th>
+                                                                    <th>ชื่อบัญชี</th>
+                                                                    <th>แพ็คเกจ</th>
+                                                                    <th>ร้านค้า</th>
+                                                                    <th>วันหมดอายุ</th>
+                                                                    <th>คงเหลือ</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {customers.map((c, i) => {
+                                                                    const remaining = daysRemaining(c.expiryDate);
+                                                                    const statusBadge = getStatusBadge(remaining);
+                                                                    return (
+                                                                        <tr key={i}>
+                                                                            <td>
+                                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                                                    <div style={{
+                                                                                        width: '2rem', height: '2rem', borderRadius: '50%',
+                                                                                        background: cat.bgColor, display: 'flex',
+                                                                                        alignItems: 'center', justifyContent: 'center',
+                                                                                        fontSize: '0.75rem', fontWeight: 600, color: cat.color, flexShrink: 0,
+                                                                                    }}>
+                                                                                        {c.email?.charAt(0).toUpperCase() || '?'}
+                                                                                    </div>
+                                                                                    <span className="truncate" style={{ maxWidth: '160px' }}>{c.email}</span>
+                                                                                </div>
+                                                                            </td>
+                                                                            <td className="font-semibold">{c.accountName || '-'}</td>
+                                                                            <td><span className="badge badge-info">{c.package || '-'}</span></td>
+                                                                            <td><span className="badge badge-neutral">{c.storeName || '-'}</span></td>
+                                                                            <td className="text-sm font-semibold">{formatDisplayDate(c.expiryDate)}</td>
+                                                                            <td><span className={`badge ${statusBadge.className}`}>{statusBadge.text}</span></td>
+                                                                        </tr>
+                                                                    );
+                                                                })}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+
+                                {getTotalExpiring() === 0 && (
+                                    <div className="empty-state" style={{ padding: '2rem 1rem' }}>
+                                        <i className="fa-solid fa-circle-check" style={{ color: 'var(--success)', opacity: 0.5, fontSize: '2rem' }}></i>
+                                        <p className="text-sm" style={{ color: 'var(--success)' }}>ไม่มีลูกค้าที่ใกล้หมดอายุ 🎉</p>
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <div className="empty-state" style={{ padding: '2rem 1rem' }}>
+                                <i className="fa-solid fa-circle-exclamation" style={{ opacity: 0.3 }}></i>
+                                <p className="text-sm text-muted">กำลังโหลดข้อมูลการหมดอายุ...</p>
+                                <button className="btn btn-secondary btn-sm" style={{ marginTop: '0.75rem' }} onClick={fetchExpiryBreakdown}>
+                                    <i className="fa-solid fa-rotate"></i> โหลดข้อมูล
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                    {/* ========== END: EXPIRY BREAKDOWN SECTION ========== */}
 
                     {/* LINE OA Promotion */}
                     <div className="glass-card" style={{ marginBottom: '1rem', background: 'linear-gradient(135deg, rgba(6,199,85,0.1), rgba(6,199,85,0.05))' }}>
@@ -3204,6 +3616,7 @@
                     'getUserProfile': '👤 ดูโปรไฟล์',
                     'line_check_email': '📱 เช็คอีเมลผ่าน LINE OA',
                     'initializeApp': '🚀 เริ่มต้นแอปพลิเคชัน',
+                    'getExpiryBreakdown': '⏰ ดูรายงานหมดอายุ',
                 };
                 return map[action] || `📌 ${action}`;
             };
@@ -3232,6 +3645,7 @@
                 if (action.includes('delete') || action.includes('remove')) return 'fa-trash-can';
                 if (action.includes('login') || action === 'loginOrRegister' || action === 'initializeApp') return 'fa-right-to-bracket';
                 if (action === 'line_check_email') return 'fa-comment-dots';
+                if (action === 'getExpiryBreakdown') return 'fa-clock-rotate-left';
                 return 'fa-circle-info';
             };
 
@@ -3241,6 +3655,7 @@
                 if (action.includes('delete') || action.includes('remove')) return 'var(--danger)';
                 if (action.includes('login') || action === 'loginOrRegister' || action === 'initializeApp') return 'var(--warning)';
                 if (action === 'line_check_email') return '#06C755';
+                if (action === 'getExpiryBreakdown') return '#f59e0b';
                 return 'var(--text-secondary)';
             };
 
