@@ -2537,73 +2537,85 @@
                     )}
 
                     {/* 🔔 แสดงรายชื่อลูกค้าที่ใกล้หมดอายุ (7 วัน) */}
-                    {stats.expiringCustomers && stats.expiringCustomers.length > 0 && (
-                        <div className="glass-card" style={{ marginBottom: '1rem' }}>
-                            <div className="chart-title" style={{ marginBottom: '1rem' }}>
-                                <i className="fa-solid fa-clock-rotate-left"></i> ลูกค้าที่ใกล้หมดอายุ (7 วัน)
+                    {stats.expiringCustomers !== undefined ? (
+                        stats.expiringCustomers.length > 0 ? (
+                            <div className="glass-card" style={{ marginBottom: '1rem' }}>
+                                <div className="chart-title" style={{ marginBottom: '1rem' }}>
+                                    <i className="fa-solid fa-clock-rotate-left"></i> ลูกค้าที่ใกล้หมดอายุ (7 วัน)
+                                </div>
+                                <div className="table-wrapper">
+                                    <table>
+                                        <thead>
+                                            <tr>
+                                                <th>สถานะ</th>
+                                                <th>อีเมล</th>
+                                                <th>ชื่อบัญชี</th>
+                                                <th>แพ็คเกจ</th>
+                                                <th>วันหมดอายุ</th>
+                                                <th>คงเหลือ</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {stats.expiringCustomers.map((c, i) => {
+                                                const days = c.daysRemaining;
+                                                let icon, badgeClass, label;
+                                                if (days < 0) {
+                                                    icon = '❌';
+                                                    badgeClass = 'badge-danger';
+                                                    label = 'หมดอายุแล้ว';
+                                                } else if (days === 0) {
+                                                    icon = '🚨';
+                                                    badgeClass = 'badge-danger';
+                                                    label = 'หมดอายุวันนี้';
+                                                } else if (days === 1) {
+                                                    icon = '🔴';
+                                                    badgeClass = 'badge-danger';
+                                                    label = 'เหลือ 1 วัน';
+                                                } else if (days === 2) {
+                                                    icon = '⚠️';
+                                                    badgeClass = 'badge-danger';
+                                                    label = 'เหลือ 2 วัน';
+                                                } else if (days === 3) {
+                                                    icon = '🟡';
+                                                    badgeClass = 'badge-warning';
+                                                    label = 'เหลือ 3 วัน';
+                                                } else {
+                                                    icon = '📅';
+                                                    badgeClass = 'badge-warning';
+                                                    label = `เหลือ ${days} วัน`;
+                                                }
+                                                const rowBg = days <= 2
+                                                    ? 'rgba(239,68,68,0.04)'
+                                                    : days <= 3
+                                                        ? 'rgba(245,158,11,0.04)'
+                                                        : undefined;
+                                                return (
+                                                    <tr key={i} style={rowBg ? { backgroundColor: rowBg } : {}}>
+                                                        <td><span className={`badge ${badgeClass}`}>{icon} {label}</span></td>
+                                                        <td className="font-semibold">{c.email}</td>
+                                                        <td>{c.accountName}</td>
+                                                        <td><span className="badge badge-info">{c.package}</span></td>
+                                                        <td className="text-sm">{formatDisplayDate(c.expiryDate)}</td>
+                                                        <td className="font-mono text-sm font-bold">{days} วัน</td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
-                            <div className="table-wrapper">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>สถานะ</th>
-                                            <th>อีเมล</th>
-                                            <th>ชื่อบัญชี</th>
-                                            <th>แพ็คเกจ</th>
-                                            <th>วันหมดอายุ</th>
-                                            <th>คงเหลือ</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {stats.expiringCustomers.map((c, i) => {
-                                            const days = c.daysRemaining;
-                                            let icon, badgeClass, label;
-                                            if (days < 0) {
-                                                icon = '❌';
-                                                badgeClass = 'badge-danger';
-                                                label = 'หมดอายุแล้ว';
-                                            } else if (days === 0) {
-                                                icon = '🚨';
-                                                badgeClass = 'badge-danger';
-                                                label = 'หมดอายุวันนี้';
-                                            } else if (days === 1) {
-                                                icon = '🔴';
-                                                badgeClass = 'badge-danger';
-                                                label = 'เหลือ 1 วัน';
-                                            } else if (days === 2) {
-                                                icon = '⚠️';
-                                                badgeClass = 'badge-danger';
-                                                label = 'เหลือ 2 วัน';
-                                            } else if (days === 3) {
-                                                icon = '🟡';
-                                                badgeClass = 'badge-warning';
-                                                label = 'เหลือ 3 วัน';
-                                            } else {
-                                                icon = '📅';
-                                                badgeClass = 'badge-warning';
-                                                label = `เหลือ ${days} วัน`;
-                                            }
-                                            const rowBg = days <= 2
-                                                ? 'rgba(239,68,68,0.04)'
-                                                : days <= 3
-                                                    ? 'rgba(245,158,11,0.04)'
-                                                    : undefined;
-                                            return (
-                                                <tr key={i} style={rowBg ? { backgroundColor: rowBg } : {}}>
-                                                    <td><span className={`badge ${badgeClass}`}>{icon} {label}</span></td>
-                                                    <td className="font-semibold">{c.email}</td>
-                                                    <td>{c.accountName}</td>
-                                                    <td><span className="badge badge-info">{c.package}</span></td>
-                                                    <td className="text-sm">{formatDisplayDate(c.expiryDate)}</td>
-                                                    <td className="font-mono text-sm font-bold">{days} วัน</td>
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
+                        ) : (
+                            <div className="glass-card" style={{ marginBottom: '1rem' }}>
+                                <div className="chart-title" style={{ marginBottom: '1rem' }}>
+                                    <i className="fa-solid fa-clock-rotate-left"></i> ลูกค้าที่ใกล้หมดอายุ (7 วัน)
+                                </div>
+                                <div className="empty-state" style={{ padding: '2rem 1rem' }}>
+                                    <i className="fa-solid fa-check-circle" style={{ color: 'var(--success)', opacity: 0.5 }}></i>
+                                    <p className="text-muted">ไม่มีลูกค้าใกล้หมดอายุในช่วง 7 วัน</p>
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )
+                    ) : null}
 
                     {/* ลูกค้าล่าสุด */}
                     <div className="glass-card">
@@ -2669,6 +2681,8 @@
                 </div>
             );
         };
+
+        // ... (ส่วนที่เหลือของ component ทั้งหมดยังคงเหมือนเดิมทุกประการ)
 
         // ==================== CUSTOMERS PAGE ====================
         const CustomersPage = () => {
