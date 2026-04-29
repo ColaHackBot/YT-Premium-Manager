@@ -1488,7 +1488,7 @@
 
         // ==================== CONFIG ====================
         const APPS_SCRIPT_URL =
-            'https://script.google.com/macros/s/AKfycbwEulBt4lXcUSYKHxVCw-_TIgXpUZHaizA8Za2MQ06fASHNVTyJzlDryQ2amdg1Or3I/exec';
+            'https://script.google.com/macros/s/AKfycbznbW7faLS4Kro5vYT-lXvULZ2JupQQBM1xbRRaHK2SXdcSKtBx3RqFETWn0r_Mge7_/exec';
         const LIFF_ID = '2009880685-UCuYnwIF';
         const LINE_OA_LINK = 'https://lin.ee/Toaxx8d';
 
@@ -2682,8 +2682,6 @@
             );
         };
 
-        // ... (ส่วนที่เหลือของ component ทั้งหมดยังคงเหมือนเดิมทุกประการ)
-
         // ==================== CUSTOMERS PAGE ====================
         const CustomersPage = () => {
             const { user, callAPI, showToast } = useApp();
@@ -3238,7 +3236,7 @@
             );
         };
 
-        // ==================== HISTORY PAGE ====================
+        // ==================== HISTORY PAGE (IMPROVED) ====================
         const HistoryPage = () => {
             const { callAPI, user } = useApp();
             const [logs, setLogs] = useState([]);
@@ -3268,6 +3266,7 @@
             const formatAction = (action) => {
                 const map = {
                     'loginOrRegister': '🔑 เข้าสู่ระบบ/สมัครสมาชิก',
+                    'initializeApp': '🚀 เริ่มต้นแอปพลิเคชัน',
                     'getCustomers': '📋 ดูรายชื่อลูกค้า',
                     'addCustomer': '➕ เพิ่มลูกค้า',
                     'updateCustomer': '✏️ แก้ไขลูกค้า',
@@ -3286,7 +3285,6 @@
                     'getFamilyHeadDetail': '🔍 ดูรายละเอียดหัวบ้าน',
                     'getUserProfile': '👤 ดูโปรไฟล์',
                     'line_check_email': '📱 เช็คอีเมลผ่าน LINE OA',
-                    'initializeApp': '🚀 เริ่มต้นแอปพลิเคชัน',
                 };
                 return map[action] || `📌 ${action}`;
             };
@@ -3297,10 +3295,11 @@
                     if (log.action === 'line_check_email') {
                         return `📱 LINE OA: เช็คอีเมล ${details.email} - ${details.found ? 'พบข้อมูล' : 'ไม่พบข้อมูล'}`;
                     }
-                    if (details.action === 'updateCustomer' && details.oldData && details.newData) return `✏️ แก้ไข: ${details.oldData.email || details.oldData.accountName}`;
-                    if (details.action === 'deleteCustomer' && details.deletedData) return `🗑️ ลบ: ${details.deletedData.email}`;
-                    if (details.action === 'addCustomer' && details.newData) return `➕ เพิ่ม: ${details.newData.email}`;
-                    if (details.action === 'register' && details.newUser) return `🆕 สมัครสมาชิก: ${details.newUser.lineName}`;
+                    if (details.action === 'updateCustomer' || details.action === 'editCustomer') return `✏️ แก้ไข: ${details.email || details.id}`;
+                    if (details.action === 'deleteCustomer') return `🗑️ ลบ: ${details.deletedEmail}`;
+                    if (details.action === 'addCustomer') return `➕ เพิ่ม: ${details.email}`;
+                    if (details.action === 'register') return `🆕 สมัครสมาชิกใหม่`;
+                    if (details.action === 'login') return `🔑 เข้าสู่ระบบ`;
                     const str = typeof log.details === 'string' ? log.details : JSON.stringify(log.details);
                     return str.length > 100 ? str.substring(0, 100) + '...' : str;
                 } catch (e) {
@@ -3313,7 +3312,7 @@
                 if (action.includes('add') || action === 'register') return 'fa-plus-circle';
                 if (action.includes('update')) return 'fa-pen-to-square';
                 if (action.includes('delete') || action.includes('remove')) return 'fa-trash-can';
-                if (action.includes('login') || action === 'loginOrRegister' || action === 'initializeApp') return 'fa-right-to-bracket';
+                if (action === 'loginOrRegister' || action === 'initializeApp') return 'fa-right-to-bracket';
                 if (action === 'line_check_email') return 'fa-comment-dots';
                 return 'fa-circle-info';
             };
@@ -3322,17 +3321,18 @@
                 if (action.includes('add') || action === 'register') return 'var(--success)';
                 if (action.includes('update')) return 'var(--info)';
                 if (action.includes('delete') || action.includes('remove')) return 'var(--danger)';
-                if (action.includes('login') || action === 'loginOrRegister' || action === 'initializeApp') return 'var(--warning)';
+                if (action === 'loginOrRegister' || action === 'initializeApp') return 'var(--warning)';
                 if (action === 'line_check_email') return '#06C755';
                 return 'var(--text-secondary)';
             };
 
+            // Improved filter logic
             const filteredLogs = logs.filter(log => {
                 if (filter === 'all') return true;
                 if (filter === 'add') return log.action.includes('add') || log.action === 'register';
                 if (filter === 'edit') return log.action.includes('update');
                 if (filter === 'delete') return log.action.includes('delete') || log.action.includes('remove');
-                if (filter === 'login') return log.action === 'loginOrRegister' || log.action === 'login' || log.action === 'initializeApp';
+                if (filter === 'login') return log.action === 'loginOrRegister' || log.action === 'initializeApp';
                 if (filter === 'line') return log.action === 'line_check_email';
                 return true;
             });
@@ -3362,7 +3362,7 @@
                                             f === 'edit' ? '✏️ แก้ไข' :
                                                 f === 'delete' ? '🗑️ ลบ' :
                                                     f === 'login' ? '🔑 เข้าสู่ระบบ' :
-                                                        '📱 LINE OA'}
+                                                        f === 'line' ? '📱 LINE OA' : ''}
                                 </button>
                             ))}
                         </div>
@@ -3958,7 +3958,7 @@
             );
         };
 
-        // ==================== LINE USERS PAGE (NEW) ====================
+        // ==================== LINE USERS PAGE ====================
         const LineUsersPage = () => {
             const { user, callAPI, showToast } = useApp();
             const [users, setUsers] = useState([]);
